@@ -1,0 +1,21 @@
+{
+  "name": "HabitFlow - Habit Tracker",
+  "short_name": "HabitFlow",
+  "description": "Urmărește-ți obiceiurile cu scheme dinamice personalizate",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#6366f1",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "categories": ["productivity", "lifestyle"],
+  "lang": "ro"
+}

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#6366f1"/>
+  <text x="256" y="300" font-family="system-ui, -apple-system, sans-serif" font-size="240" font-weight="bold" text-anchor="middle" fill="white">HF</text>
+  <circle cx="380" cy="120" r="50" fill="#fbbf24"/>
+  <path d="M380 95 L390 110 L405 112 L393 123 L396 138 L380 130 L364 138 L367 123 L355 112 L370 110 Z" fill="#f59e0b"/>
+</svg>
