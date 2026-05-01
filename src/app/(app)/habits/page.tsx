@@ -1,10 +1,12 @@
-import { getHabits } from '@/lib/actions/habits';
+import { getHabits, getArchivedHabits } from '@/lib/actions/habits';
 import { HabitGrid } from '@/components/habits/habit-list';
+import { ArchivedHabits } from '@/components/habits/archived-habits';
 import Link from 'next/link';
 import { Plus } from 'lucide-react';
 
 export default async function HabitsPage() {
   const habits = await getHabits();
+  const archived = await getArchivedHabits();
 
   return (
     <div>
@@ -24,18 +26,22 @@ export default async function HabitsPage() {
       {habits.length === 0 ? (
         <div className="text-center py-16">
           <p className="text-gray-500 dark:text-gray-400 mb-4">
-            Nu ai niciun obicei. Creează primul!
+            Nu ai niciun obicei. Creeaza primul!
           </p>
           <Link
             href="/habits/new"
             className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition"
           >
             <Plus className="w-4 h-4" />
-            Creează obicei
+            Creeaza obicei
           </Link>
         </div>
       ) : (
         <HabitGrid habits={habits} />
+      )}
+
+      {archived.length > 0 && (
+        <ArchivedHabits habits={archived} />
       )}
     </div>
   );

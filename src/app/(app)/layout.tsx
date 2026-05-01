@@ -6,6 +6,8 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard,
   ListTodo,
+  Target,
+  Wallet,
   Settings,
   LogOut,
   Menu,
@@ -19,6 +21,8 @@ import { cn } from '@/lib/utils/cn';
 const NAV_ITEMS = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/habits', label: 'Obiceiuri', icon: ListTodo },
+  { href: '/targets', label: 'Targete', icon: Target },
+  { href: '/budgets', label: 'Bugete', icon: Wallet },
   { href: '/settings', label: 'Setări', icon: Settings },
 ];
 

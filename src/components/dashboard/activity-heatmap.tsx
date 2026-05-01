@@ -35,11 +35,18 @@ const COLOR_PRESETS = [
 
 const MONTH_LABELS = ['Ian', 'Feb', 'Mar', 'Apr', 'Mai', 'Iun', 'Iul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-interface ActivityHeatmapProps {
-  data: HeatmapDay[];
+interface DeadlineMarker {
+  date: string;
+  color: string;
+  name: string;
 }
 
-export function ActivityHeatmap({ data }: ActivityHeatmapProps) {
+interface ActivityHeatmapProps {
+  data: HeatmapDay[];
+  deadlines?: DeadlineMarker[];
+}
+
+export function ActivityHeatmap({ data, deadlines = [] }: ActivityHeatmapProps) {
   const [range, setRange] = useState<TimeRange>('3m');
   const [colorIdx, setColorIdx] = useState(0);
   const [showColors, setShowColors] = useState(false);
@@ -47,14 +54,56 @@ export function ActivityHeatmap({ data }: ActivityHeatmapProps) {
 
   const filteredData = useMemo(() => {
     if (!data || data.length === 0) return [];
-    if (range === 'all') return data;
+    if (range === 'all') {
+      // "All" = from first recorded day to furthest deadline (or today)
+      const lastDeadline = deadlines.length > 0
+        ? deadlines.reduce((max, d) => d.date > max ? d.date : max, deadlines[0].date)
+        : '';
+      const today = new Date().toLocaleDateString('sv-SE');
+      const endDate = lastDeadline > today ? lastDeadline : today;
+
+      const base = data.filter((d) => d.date <= endDate);
+      // Extend with future empty days up to endDate
+      const lastBaseDate = base.length > 0 ? base[base.length - 1].date : '';
+      if (endDate > lastBaseDate) {
+        const d = new Date(lastBaseDate + 'T00:00:00');
+        d.setDate(d.getDate() + 1);
+        while (d.toLocaleDateString('sv-SE') <= endDate) {
+          base.push({ date: d.toLocaleDateString('sv-SE'), count: 0, level: 0 });
+          d.setDate(d.getDate() + 1);
+        }
+      }
+      return base;
+    }
 
     const days = RANGE_DAYS[range];
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - days);
     const cutoffStr = cutoff.toLocaleDateString('sv-SE');
-    return data.filter((d) => d.date >= cutoffStr);
-  }, [data, range]);
+
+    // End date: furthest deadline within range, or today
+    const todayStr = new Date().toLocaleDateString('sv-SE');
+    const rangeEnd = new Date();
+    rangeEnd.setDate(rangeEnd.getDate() + 30); // look 30 days ahead for deadlines
+    const rangeEndStr = rangeEnd.toLocaleDateString('sv-SE');
+    const relevantDeadline = deadlines
+      .filter((d) => d.date >= cutoffStr && d.date <= rangeEndStr)
+      .reduce((max, d) => d.date > max ? d.date : max, todayStr);
+    const endDate = relevantDeadline > todayStr ? relevantDeadline : todayStr;
+
+    const base = data.filter((d) => d.date >= cutoffStr && d.date <= endDate);
+    // Extend with future empty days up to endDate
+    const lastBaseDate = base.length > 0 ? base[base.length - 1].date : cutoffStr;
+    if (endDate > lastBaseDate) {
+      const d = new Date(lastBaseDate + 'T00:00:00');
+      d.setDate(d.getDate() + 1);
+      while (d.toLocaleDateString('sv-SE') <= endDate) {
+        base.push({ date: d.toLocaleDateString('sv-SE'), count: 0, level: 0 });
+        d.setDate(d.getDate() + 1);
+      }
+    }
+    return base;
+  }, [data, range, deadlines]);
 
   if (!data || data.length === 0) return null;
 
@@ -197,18 +246,45 @@ export function ActivityHeatmap({ data }: ActivityHeatmapProps) {
             <div key={weekIdx} className="flex flex-col gap-[3px]">
               {week.map((day, dayIdx) => {
                 const isToday = day.date === todayStr;
+                const isFuture = day.date > todayStr;
+                const deadline = deadlines.find((d) => d.date === day.date);
+                const hasDeadline = !!deadline;
+                let tooltip = day.date ? `${day.date}: ${day.count} completat(e)` : '';
+                if (hasDeadline) {
+                  tooltip = `🎯 ${deadline!.name} — deadline!`;
+                }
                 return (
                   <div
                     key={`${weekIdx}-${dayIdx}`}
-                    title={day.date ? `${day.date}: ${day.count} completat(e)` : ''}
-                    className={`w-[11px] h-[11px] rounded-[2px] ${
+                    title={tooltip}
+                    className={`w-[11px] h-[11px] relative ${
                       !day.date ? 'invisible' :
-                      isToday ? 'ring-1 ring-indigo-400' : ''
-                    }`}
-                    style={{
-                      backgroundColor: day.date ? colors.levels[day.level] : undefined,
-                    }}
-                  />
+                      hasDeadline ? '' :
+                      'rounded-[2px]'
+                    } ${isFuture && !hasDeadline ? 'opacity-30' : ''}`}
+                  >
+                    {hasDeadline ? (
+                      <div
+                        className="absolute inset-0 flex items-center justify-center"
+                        style={{ transform: 'rotate(45deg)' }}
+                      >
+                        <div
+                          className="w-[8px] h-[8px] rounded-[1px]"
+                          style={{ backgroundColor: deadline!.color }}
+                        />
+                        <div
+                          className="absolute w-[3px] h-[3px] rounded-full bg-white dark:bg-gray-900"
+                        />
+                      </div>
+                    ) : (
+                      <div
+                        className={`w-full h-full rounded-[2px] ${
+                          isToday ? 'ring-1 ring-indigo-400' : ''
+                        }`}
+                        style={{ backgroundColor: isFuture ? colors.levels[0] : colors.levels[day.level] }}
+                      />
+                    )}
+                  </div>
                 );
               })}
             </div>
@@ -216,12 +292,23 @@ export function ActivityHeatmap({ data }: ActivityHeatmapProps) {
         </div>
 
         {/* Legend */}
-        <div className="flex items-center gap-1 mt-3 justify-end">
-          <span className="text-[10px] text-gray-400 mr-1">Mai puțin</span>
-          {colors.levels.map((color, i) => (
-            <div key={i} className="w-[11px] h-[11px] rounded-[2px]" style={{ backgroundColor: color }} />
-          ))}
-          <span className="text-[10px] text-gray-400 ml-1">Mai mult</span>
+        <div className="flex items-center gap-3 mt-3 justify-between">
+          <div className="flex items-center gap-1">
+            <span className="text-[10px] text-gray-400 mr-1">Mai putin</span>
+            {colors.levels.map((color, i) => (
+              <div key={i} className="w-[11px] h-[11px] rounded-[2px]" style={{ backgroundColor: color }} />
+            ))}
+            <span className="text-[10px] text-gray-400 ml-1">Mai mult</span>
+          </div>
+          {deadlines.length > 0 && (
+            <div className="flex items-center gap-1">
+              <div
+                className="w-[8px] h-[8px] rounded-[1px]"
+                style={{ transform: 'rotate(45deg)', backgroundColor: deadlines[0].color }}
+              />
+              <span className="text-[10px] text-gray-400">Deadline target</span>
+            </div>
+          )}
         </div>
       </div>
     </div>

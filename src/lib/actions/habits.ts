@@ -52,6 +52,10 @@ export async function createHabit(formData: FormData) {
   const description = (formData.get('description') as string) || '';
   const color = (formData.get('color') as string) || '#6366f1';
   const icon = (formData.get('icon') as string) || '📋';
+  const reminderEnabled = formData.get('reminder_enabled') === 'true';
+  const reminderTime = (formData.get('reminder_time') as string) || null;
+  const reminderTimezone =
+    (formData.get('reminder_timezone') as string) || 'Europe/Bucharest';
 
   const { data, error } = await supabase
     .from('habits')
@@ -61,6 +65,9 @@ export async function createHabit(formData: FormData) {
       description,
       color,
       icon,
+      reminder_enabled: reminderEnabled,
+      reminder_time: reminderEnabled && reminderTime ? reminderTime : null,
+      reminder_timezone: reminderTimezone,
     })
     .select()
     .single();
@@ -79,10 +86,19 @@ export async function updateHabit(habitId: string, formData: FormData) {
   const description = (formData.get('description') as string) || '';
   const color = (formData.get('color') as string) || '#6366f1';
   const icon = (formData.get('icon') as string) || '📋';
+  const reminderEnabled = formData.get('reminder_enabled') === 'true';
+  const reminderTime = (formData.get('reminder_time') as string) || null;
 
   const { error } = await supabase
     .from('habits')
-    .update({ name, description, color, icon })
+    .update({
+      name,
+      description,
+      color,
+      icon,
+      reminder_enabled: reminderEnabled,
+      reminder_time: reminderEnabled && reminderTime ? reminderTime : null,
+    })
     .eq('id', habitId);
 
   if (error) return { error: error.message };
@@ -97,6 +113,35 @@ export async function deleteHabit(habitId: string) {
   const { error } = await supabase
     .from('habits')
     .update({ is_active: false })
+    .eq('id', habitId);
+
+  if (error) return { error: error.message };
+
+  revalidatePath('/dashboard');
+  revalidatePath('/habits');
+  return { success: true };
+}
+
+export async function getArchivedHabits(): Promise<Habit[]> {
+  const supabase = await createClient();
+  const { data: user } = await supabase.auth.getUser();
+  if (!user.user) return [];
+
+  const { data } = await supabase
+    .from('habits')
+    .select('*')
+    .eq('user_id', user.user.id)
+    .eq('is_active', false)
+    .order('updated_at', { ascending: false });
+
+  return (data as Habit[]) ?? [];
+}
+
+export async function reactivateHabit(habitId: string) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from('habits')
+    .update({ is_active: true })
     .eq('id', habitId);
 
   if (error) return { error: error.message };

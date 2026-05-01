@@ -50,6 +50,9 @@ export interface Habit {
   color: string;
   icon: string;
   is_active: boolean;
+  reminder_enabled: boolean;
+  reminder_time: string | null;
+  reminder_timezone: string;
   stats_cache: HabitStatsCache | null;
   created_at: string;
   updated_at: string;
@@ -129,3 +132,85 @@ export interface FieldAggregation {
 }
 
 export type TimeRange = '7d' | '30d' | '90d';
+
+export type TargetFrequency = 'daily' | 'weekly' | 'monthly' | 'total';
+
+export interface Target {
+  id: string;
+  user_id: string;
+  habit_id: string | null;
+  name: string;
+  description: string;
+  target_value: number;
+  target_frequency: TargetFrequency;
+  deadline: string | null;
+  is_completed: boolean;
+  completed_at: string | null;
+  color: string;
+  icon: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// ============================================
+// Budget Types
+// ============================================
+
+export type BudgetCategoryKind = 'expense' | 'income';
+
+export interface BudgetCategory {
+  id: string;
+  user_id: string;
+  name: string;
+  icon: string;
+  color: string;
+  kind: BudgetCategoryKind;
+  monthly_limit_cents: number | null;
+  sort_order: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Transaction {
+  id: string;
+  user_id: string;
+  category_id: string;
+  amount_cents: number;
+  kind: BudgetCategoryKind;
+  note: string;
+  transaction_date: string;
+  is_recurring: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TransactionWithCategory extends Transaction {
+  category: BudgetCategory;
+}
+
+export interface CategoryBudget {
+  category: BudgetCategory;
+  spent_cents: number;
+  limit_cents: number | null;
+  percent: number;
+  status: 'safe' | 'normal' | 'warning' | 'danger';
+}
+
+export interface BudgetSummary {
+  total_income_cents: number;
+  total_expense_cents: number;
+  balance_cents: number;
+  categories: CategoryBudget[];
+}
+
+export interface PushSubscriptionData {
+  id: string;
+  user_id: string;
+  endpoint: string;
+  p256dh: string;
+  auth_key: string;
+  user_agent: string | null;
+  created_at: string;
+  updated_at: string;
+}

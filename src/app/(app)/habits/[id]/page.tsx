@@ -16,7 +16,7 @@ import {
   BarChart3,
 } from 'lucide-react';
 import { DynamicForm } from '@/components/dynamic-form/dynamic-form';
-import { FieldChart } from '@/components/analytics/field-chart';
+import { HabitAnalytics } from '@/components/analytics/habit-analytics';
 import { useAutoSave } from '@/hooks/use-auto-save';
 import { getHabitWithFields } from '@/lib/actions/habits';
 import { getEntry, getEntries } from '@/lib/actions/entries';
@@ -165,11 +165,12 @@ export default function HabitDetailPage() {
                 ? 'bg-red-100 dark:bg-red-900/30 text-red-600'
                 : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500'
             }`}
+            title="Dezactiveaza obiceiul"
           >
             <Trash2 className="w-5 h-5" />
           </button>
           {confirmDelete && (
-            <span className="text-xs text-red-500">Apasă din nou pentru ștergere</span>
+            <span className="text-xs text-red-500">Apasa din nou pentru a dezactiva</span>
           )}
         </div>
       </div>
@@ -307,17 +308,8 @@ export default function HabitDetailPage() {
 
       {/* Analytics Section */}
       {showAnalytics && habit.field_definitions.length > 0 && (
-        <div className="mt-6 space-y-3">
-          <h2 className="text-sm font-semibold text-gray-900 dark:text-white">
-            Analytics (ultimele 30 zile)
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {habit.field_definitions
-              .filter((f) => !f.is_deleted)
-              .map((field) => (
-                <FieldChart key={field.id} field={field} entries={history} />
-              ))}
-          </div>
+        <div className="mt-6">
+          <HabitAnalytics habitId={habitId} fields={habit.field_definitions} />
         </div>
       )}
     </div>

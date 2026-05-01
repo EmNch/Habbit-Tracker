@@ -7,6 +7,7 @@ import { ArrowLeft, Plus, Trash2, GripVertical } from 'lucide-react';
 import { createHabit } from '@/lib/actions/habits';
 import { addField } from '@/lib/actions/fields';
 import { FIELD_TYPES, FIELD_TYPE_LABELS } from '@/lib/types';
+import { ReminderSettings } from '@/components/habits/reminder-settings';
 import type { FieldType, FieldOptions } from '@/lib/types';
 
 interface PendingField {
@@ -26,6 +27,8 @@ export default function NewHabitPage() {
   const [color, setColor] = useState('#6366f1');
   const [icon, setIcon] = useState('📋');
   const [fields, setFields] = useState<PendingField[]>([]);
+  const [reminderEnabled, setReminderEnabled] = useState(false);
+  const [reminderTime, setReminderTime] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -68,6 +71,14 @@ export default function NewHabitPage() {
     formData.append('description', description);
     formData.append('color', color);
     formData.append('icon', icon);
+    formData.append('reminder_enabled', String(reminderEnabled));
+    formData.append('reminder_time', reminderTime || '');
+    formData.append(
+      'reminder_timezone',
+      typeof Intl !== 'undefined'
+        ? Intl.DateTimeFormat().resolvedOptions().timeZone
+        : 'Europe/Bucharest',
+    );
 
     const result = await createHabit(formData);
 
@@ -336,6 +347,14 @@ export default function NewHabitPage() {
             ))}
           </div>
         </div>
+
+        {/* Reminder Settings */}
+        <ReminderSettings
+          onChange={(enabled, time) => {
+            setReminderEnabled(enabled);
+            setReminderTime(time);
+          }}
+        />
 
         {/* Submit */}
         <div className="flex gap-3 justify-end">

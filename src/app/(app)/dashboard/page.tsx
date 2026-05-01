@@ -1,5 +1,6 @@
 import { getHabits } from '@/lib/actions/habits';
 import { getDashboardSummary, getHabitsWithStats } from '@/lib/actions/analytics';
+import { getTargets } from '@/lib/actions/targets';
 import { DashboardClient } from '@/components/dashboard/dashboard-client';
 import Link from 'next/link';
 import { Plus } from 'lucide-react';
@@ -16,7 +17,7 @@ export default async function DashboardPage() {
               Dashboard
             </h1>
             <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
-              Bine ai venit în HabitFlow
+              Bine ai venit in HabitFlow
             </p>
           </div>
           <Link
@@ -27,14 +28,15 @@ export default async function DashboardPage() {
             Obicei nou
           </Link>
         </div>
-        <DashboardClient habits={[]} summary={null} />
+        <DashboardClient habits={[]} summary={null} targets={[]} />
       </div>
     );
   }
 
-  const [summary, habitsWithStats] = await Promise.all([
+  const [summary, habitsWithStats, targets] = await Promise.all([
     getDashboardSummary(),
     getHabitsWithStats(),
+    getTargets(),
   ]);
 
   return (
@@ -57,7 +59,7 @@ export default async function DashboardPage() {
         </Link>
       </div>
 
-      <DashboardClient habits={habitsWithStats} summary={summary} />
+      <DashboardClient habits={habitsWithStats} summary={summary} targets={targets} />
     </div>
   );
 }

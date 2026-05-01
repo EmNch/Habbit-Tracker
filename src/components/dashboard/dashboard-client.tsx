@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import type { HabitWithStats, DashboardSummary } from '@/lib/types';
+import type { HabitWithStats, DashboardSummary, Target } from '@/lib/types';
 import { SummaryCards } from './summary-cards';
 import { MotivationalHeader } from './motivational-header';
 import { ActivityHeatmap } from './activity-heatmap';
 import { HabitStatsGrid } from './habit-stats-grid';
+import { TargetCountdown } from './target-countdown';
 import { EmptyDashboard } from './empty-state';
 import { Confetti } from '@/components/gamification/confetti';
 import { ContextualMessage } from '@/components/gamification/contextual-message';
@@ -13,9 +14,10 @@ import { ContextualMessage } from '@/components/gamification/contextual-message'
 interface DashboardClientProps {
   habits: HabitWithStats[];
   summary: DashboardSummary | null;
+  targets: Target[];
 }
 
-export function DashboardClient({ habits, summary }: DashboardClientProps) {
+export function DashboardClient({ habits, summary, targets }: DashboardClientProps) {
   const [showConfetti, setShowConfetti] = useState(false);
   const [prevCompleted, setPrevCompleted] = useState(0);
 
@@ -53,8 +55,18 @@ export function DashboardClient({ habits, summary }: DashboardClientProps) {
 
       {nothingToday && <EmptyDashboard hasHabits={true} />}
 
-      {/* Heatmap - always visible */}
-      <ActivityHeatmap data={summary.heatmapData} />
+      {/* Targets countdown */}
+      {targets.length > 0 && (
+        <TargetCountdown targets={targets} />
+      )}
+
+      {/* Heatmap */}
+      <ActivityHeatmap
+        data={summary.heatmapData}
+        deadlines={targets
+          .filter((t) => !t.is_completed && t.deadline)
+          .map((t) => ({ date: t.deadline!, color: t.color, name: t.name }))}
+      />
 
       <div>
         <h2 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">

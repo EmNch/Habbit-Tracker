@@ -7,6 +7,7 @@ import { ArrowLeft, Plus, Trash2, Loader2 } from 'lucide-react';
 import { getHabitWithFields, updateHabit } from '@/lib/actions/habits';
 import { addField, softDeleteField } from '@/lib/actions/fields';
 import { FIELD_TYPES, FIELD_TYPE_LABELS } from '@/lib/types';
+import { ReminderSettings } from '@/components/habits/reminder-settings';
 import type { HabitWithFields, FieldType, FieldOptions } from '@/lib/types';
 
 interface NewField {
@@ -152,6 +153,13 @@ export default function EditHabitPage() {
           {saving ? 'Se salvează...' : 'Salvează'}
         </button>
       </form>
+
+      {/* Reminder Settings */}
+      <ReminderSettings
+        habitId={habitId}
+        initialEnabled={habit.reminder_enabled}
+        initialTime={habit.reminder_time}
+      />
 
       {/* Field Definitions */}
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 space-y-4">

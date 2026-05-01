@@ -13,6 +13,7 @@ import {
   Tooltip,
   ResponsiveContainer,
   CartesianGrid,
+  ReferenceLine,
 } from 'recharts';
 import type { FieldType, HabitFieldDefinition, HabitEntry } from '@/lib/types';
 
@@ -53,24 +54,33 @@ export function FieldChart({ field, entries }: FieldChartProps) {
 const CHARTABLE_TYPES = new Set<FieldType>(['number', 'slider', 'rating', 'boolean', 'select']);
 
 function LineChartComponent({ field, entries }: FieldChartProps) {
-  const data = entries
+  const rawData = entries
     .filter((e) => e.values[field.field_key] != null)
     .map((e) => ({
-      date: e.entry_date.slice(5),
+      date: e.entry_date,
+      label: e.entry_date.slice(5),
       value: Number(e.values[field.field_key]),
-    }));
+    }))
+    .sort((a, b) => a.date.localeCompare(b.date));
 
-  if (data.length === 0) {
+  if (rawData.length === 0) {
     return <EmptyState />;
   }
 
+  const avg = rawData.reduce((s, d) => s + d.value, 0) / rawData.length;
+
   return (
     <ResponsiveContainer width="100%" height="100%">
-      <LineChart data={data}>
+      <LineChart data={rawData}>
         <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-        <XAxis dataKey="date" tick={{ fontSize: 10 }} stroke="#9ca3af" />
+        <XAxis dataKey="label" tick={{ fontSize: 10 }} stroke="#9ca3af" />
         <YAxis tick={{ fontSize: 10 }} stroke="#9ca3af" />
         <Tooltip
+          formatter={(value) => [String(value), field.field_label]}
+          labelFormatter={(label) => {
+            const item = rawData.find((d) => d.label === String(label));
+            return item ? item.date : String(label);
+          }}
           contentStyle={{
             backgroundColor: '#1f2937',
             border: 'none',
@@ -78,6 +88,12 @@ function LineChartComponent({ field, entries }: FieldChartProps) {
             fontSize: '12px',
             color: '#fff',
           }}
+        />
+        <ReferenceLine
+          y={Math.round(avg * 10) / 10}
+          stroke="#9ca3af"
+          strokeDasharray="4 4"
+          label={{ value: `Med: ${Math.round(avg * 10) / 10}`, position: 'insideTopRight', fontSize: 10, fill: '#9ca3af' }}
         />
         <Line
           type="monotone"
@@ -125,7 +141,7 @@ function BarChartComponent({ field, entries }: FieldChartProps) {
             color: '#fff',
           }}
         />
-        <Bar dataKey="count" fill="#6366f1" radius={[4, 4, 0, 0]} />
+        <Bar dataKey="count" fill="#6366f1" radius={[4, 4, 0, 0]} label={{ position: 'top', fontSize: 10, fill: '#9ca3af' }} />
       </BarChart>
     </ResponsiveContainer>
   );
