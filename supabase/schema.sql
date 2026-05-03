@@ -28,7 +28,7 @@ CREATE TABLE habit_field_definitions (
     field_label TEXT NOT NULL,
     field_type TEXT NOT NULL CHECK (field_type IN (
         'text', 'number', 'rating', 'boolean', 'select',
-        'slider', 'date', 'link', 'long_text'
+        'slider', 'date', 'link', 'long_text', 'time_duration'
     )),
     field_options JSONB DEFAULT '{}',
     sort_order INTEGER NOT NULL DEFAULT 0,

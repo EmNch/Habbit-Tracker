@@ -13,7 +13,7 @@ interface HabitAnalyticsProps {
   fields: HabitFieldDefinition[];
 }
 
-const CHARTABLE = new Set(['number', 'slider', 'rating', 'boolean', 'select']);
+const CHARTABLE = new Set(['number', 'slider', 'rating', 'boolean', 'select', 'time_duration']);
 const RANGE_DAYS: Record<DateRange, number> = { '7d': 7, '30d': 30, '90d': 90, all: 9999 };
 
 export function HabitAnalytics({ habitId, fields }: HabitAnalyticsProps) {

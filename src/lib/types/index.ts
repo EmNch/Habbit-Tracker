@@ -7,7 +7,8 @@ export type FieldType =
   | 'slider'
   | 'date'
   | 'link'
-  | 'long_text';
+  | 'long_text'
+  | 'time_duration';
 
 export const FIELD_TYPES: FieldType[] = [
   'text',
@@ -19,6 +20,7 @@ export const FIELD_TYPES: FieldType[] = [
   'date',
   'link',
   'long_text',
+  'time_duration',
 ];
 
 export const FIELD_TYPE_LABELS: Record<FieldType, string> = {
@@ -31,6 +33,7 @@ export const FIELD_TYPE_LABELS: Record<FieldType, string> = {
   date: 'Dată',
   link: 'Link (URL)',
   long_text: 'Text Lung (Markdown)',
+  time_duration: 'Timp (Cronometru)',
 };
 
 export interface FieldOptions {

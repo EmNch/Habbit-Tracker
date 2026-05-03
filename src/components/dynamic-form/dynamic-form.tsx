@@ -11,6 +11,7 @@ import { SliderField } from './fields/slider-field';
 import { DateField } from './fields/date-field';
 import { LinkField } from './fields/link-field';
 import { LongTextField } from './fields/long-text-field';
+import { TimeDurationField } from './fields/time-duration-field';
 
 const FIELD_COMPONENTS: Record<FieldType, React.ComponentType<FieldProps>> = {
   text: TextField,
@@ -22,6 +23,7 @@ const FIELD_COMPONENTS: Record<FieldType, React.ComponentType<FieldProps>> = {
   date: DateField,
   link: LinkField,
   long_text: LongTextField,
+  time_duration: TimeDurationField,
 };
 
 interface DynamicFormProps {

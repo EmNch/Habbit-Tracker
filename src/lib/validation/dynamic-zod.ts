@@ -23,6 +23,8 @@ function fieldToZod(fieldType: FieldType, options: FieldOptions): ZodTypeAny {
       return z.string().url('URL invalid');
     case 'long_text':
       return z.string().transform((v) => v || null);
+    case 'time_duration':
+      return z.number().min(0);
     default:
       return z.unknown();
   }
