@@ -106,8 +106,10 @@ export default function HabitDetailPage() {
       setConfirmDelete(true);
       return;
     }
-    await deleteHabit(habitId);
-    router.push('/habits');
+    const result = await deleteHabit(habitId);
+    if (!result.error) {
+      router.push('/habits');
+    }
   }
 
   if (loading) {

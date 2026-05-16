@@ -37,7 +37,7 @@ export function FieldChart({ field, entries }: FieldChartProps) {
         {field.field_label}
       </h3>
       <div className="h-48">
-        {fieldType === 'number' || fieldType === 'slider' ? (
+        {fieldType === 'number' || fieldType === 'slider' || fieldType === 'time_duration' ? (
           <LineChartComponent field={field} entries={entries} />
         ) : fieldType === 'rating' ? (
           <BarChartComponent field={field} entries={entries} />
@@ -51,7 +51,7 @@ export function FieldChart({ field, entries }: FieldChartProps) {
   );
 }
 
-const CHARTABLE_TYPES = new Set<FieldType>(['number', 'slider', 'rating', 'boolean', 'select']);
+const CHARTABLE_TYPES = new Set<FieldType>(['number', 'slider', 'rating', 'boolean', 'select', 'time_duration']);
 
 function LineChartComponent({ field, entries }: FieldChartProps) {
   const rawData = entries

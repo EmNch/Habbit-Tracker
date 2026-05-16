@@ -108,7 +108,7 @@ export function ActivityHeatmap({ data, deadlines = [] }: ActivityHeatmapProps) 
   if (!data || data.length === 0) return null;
 
   // Recalculate levels for filtered data
-  const maxCount = Math.max(...filteredData.map((d) => d.count), 1);
+  const maxCount = filteredData.reduce((max, d) => Math.max(max, d.count), 1);
   const levelData: HeatmapDay[] = filteredData.map((d) => {
     const ratio = d.count / maxCount;
     const level = (d.count === 0 ? 0 : ratio < 0.25 ? 1 : ratio < 0.5 ? 2 : ratio < 0.75 ? 3 : 4) as HeatmapDay['level'];

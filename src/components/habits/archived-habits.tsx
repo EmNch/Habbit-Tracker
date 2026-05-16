@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Archive, RotateCcw } from 'lucide-react';
 import { reactivateHabit } from '@/lib/actions/habits';
 import type { Habit } from '@/lib/types';
@@ -13,13 +13,21 @@ export function ArchivedHabits({ habits }: ArchivedHabitsProps) {
   const [expanded, setExpanded] = useState(false);
   const [list, setList] = useState(habits);
 
+  useEffect(() => {
+    setList(habits);
+    if (habits.length === 0) setExpanded(false);
+  }, [habits]);
+
   async function handleReactivate(id: string) {
-    await reactivateHabit(id);
-    setList((prev) => prev.filter((h) => h.id !== id));
+    try {
+      await reactivateHabit(id);
+      setList((prev) => prev.filter((h) => h.id !== id));
+    } catch {
+      // keep item in list on failure
+    }
   }
 
-  if (list.length === 0 && expanded) {
-    setExpanded(false);
+  if (list.length === 0) {
     return null;
   }
 

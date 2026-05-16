@@ -24,7 +24,8 @@ export function DashboardClient({ habits, summary, targets }: DashboardClientPro
   useEffect(() => {
     if (summary && summary.completionRateToday === 100 && prevCompleted > 0 && prevCompleted < summary.totalHabits) {
       setShowConfetti(true);
-      setTimeout(() => setShowConfetti(false), 4000);
+      const timer = setTimeout(() => setShowConfetti(false), 4000);
+      return () => clearTimeout(timer);
     }
     if (summary) {
       setPrevCompleted(summary.completedToday);
@@ -36,7 +37,6 @@ export function DashboardClient({ habits, summary, targets }: DashboardClientPro
   }
 
   const allCompleted = summary.completionRateToday === 100;
-  const nothingToday = summary.completedToday === 0;
   const hourOfDay = new Date().getHours();
 
   return (
@@ -52,8 +52,6 @@ export function DashboardClient({ habits, summary, targets }: DashboardClientPro
 
       <MotivationalHeader summary={summary} />
       <SummaryCards summary={summary} />
-
-      {nothingToday && <EmptyDashboard hasHabits={true} />}
 
       {/* Targets countdown */}
       {targets.length > 0 && (

@@ -20,10 +20,14 @@ export async function getTargets(): Promise<Target[]> {
 
 export async function getTarget(targetId: string): Promise<Target | null> {
   const supabase = await createClient();
+  const { data: user } = await supabase.auth.getUser();
+  if (!user.user) return null;
+
   const { data } = await supabase
     .from('targets')
     .select('*')
     .eq('id', targetId)
+    .eq('user_id', user.user.id)
     .single();
   return (data as Target) ?? null;
 }
@@ -67,6 +71,8 @@ export async function createTarget(formData: FormData) {
 
 export async function updateTarget(targetId: string, formData: FormData) {
   const supabase = await createClient();
+  const { data: user } = await supabase.auth.getUser();
+  if (!user.user) return { error: 'Neautentificat' };
 
   const name = formData.get('name') as string;
   const description = (formData.get('description') as string) || '';
@@ -89,7 +95,8 @@ export async function updateTarget(targetId: string, formData: FormData) {
       color,
       icon,
     })
-    .eq('id', targetId);
+    .eq('id', targetId)
+    .eq('user_id', user.user.id);
 
   if (error) return { error: error.message };
 
@@ -100,10 +107,14 @@ export async function updateTarget(targetId: string, formData: FormData) {
 
 export async function deleteTarget(targetId: string) {
   const supabase = await createClient();
+  const { data: user } = await supabase.auth.getUser();
+  if (!user.user) return { error: 'Neautentificat' };
+
   const { error } = await supabase
     .from('targets')
     .delete()
-    .eq('id', targetId);
+    .eq('id', targetId)
+    .eq('user_id', user.user.id);
 
   if (error) return { error: error.message };
 
@@ -114,24 +125,38 @@ export async function deleteTarget(targetId: string) {
 
 export async function toggleTargetComplete(targetId: string) {
   const supabase = await createClient();
-  const { data: target } = await supabase
-    .from('targets')
-    .select('is_completed')
-    .eq('id', targetId)
-    .single();
+  const { data: user } = await supabase.auth.getUser();
+  if (!user.user) return { error: 'Neautentificat' };
 
-  if (!target) return { error: 'Target negasit' };
+  // Use an atomic toggle via raw SQL to avoid race condition
+  const { data, error } = await supabase.rpc('toggle_target', {
+    p_target_id: targetId,
+    p_user_id: user.user.id,
+  });
 
-  const newCompleted = !target.is_completed;
-  const { error } = await supabase
-    .from('targets')
-    .update({
-      is_completed: newCompleted,
-      completed_at: newCompleted ? new Date().toISOString() : null,
-    })
-    .eq('id', targetId);
+  if (error) {
+    // Fallback: if RPC doesn't exist, do read-then-write with user filter
+    const { data: target } = await supabase
+      .from('targets')
+      .select('is_completed')
+      .eq('id', targetId)
+      .eq('user_id', user.user.id)
+      .single();
 
-  if (error) return { error: error.message };
+    if (!target) return { error: 'Target negasit' };
+
+    const newCompleted = !target.is_completed;
+    const { error: updateError } = await supabase
+      .from('targets')
+      .update({
+        is_completed: newCompleted,
+        completed_at: newCompleted ? new Date().toISOString() : null,
+      })
+      .eq('id', targetId)
+      .eq('user_id', user.user.id);
+
+    if (updateError) return { error: updateError.message };
+  }
 
   revalidatePath('/dashboard');
   revalidatePath('/targets');

@@ -1,34 +1,37 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, ChevronDown } from 'lucide-react';
-import { createTransaction } from '@/lib/actions/budgets';
-import type { BudgetCategory, BudgetCategoryKind } from '@/lib/types';
+import { X } from 'lucide-react';
+import { updateTransaction, deleteTransaction } from '@/lib/actions/budgets';
+import type { BudgetCategory, BudgetCategoryKind, TransactionWithCategory } from '@/lib/types';
 
-interface AddTransactionSheetProps {
+interface EditTransactionSheetProps {
   open: boolean;
   onClose: () => void;
+  transaction: TransactionWithCategory;
   categories: BudgetCategory[];
 }
 
-export function AddTransactionSheet({ open, onClose, categories }: AddTransactionSheetProps) {
-  const [kind, setKind] = useState<BudgetCategoryKind>('expense');
-  const [categoryId, setCategoryId] = useState('');
-  const [displayAmount, setDisplayAmount] = useState('0');
-  const [note, setNote] = useState('');
+export function EditTransactionSheet({ open, onClose, transaction, categories }: EditTransactionSheetProps) {
+  const [kind, setKind] = useState<BudgetCategoryKind>(transaction.kind);
+  const [categoryId, setCategoryId] = useState(transaction.category_id);
+  const [displayAmount, setDisplayAmount] = useState(
+    (transaction.amount_cents / 100).toFixed(2).replace(/\.?0+$/, '') || '0',
+  );
+  const [note, setNote] = useState(transaction.note || '');
+  const [date, setDate] = useState(transaction.transaction_date);
   const [saving, setSaving] = useState(false);
 
   const filtered = categories.filter((c) => c.kind === kind);
 
   useEffect(() => {
-    if (open) {
-      setDisplayAmount('0');
-      setNote('');
-      setSaving(false);
-      const first = categories.find((c) => c.kind === kind);
-      if (first) setCategoryId(first.id);
-    }
-  }, [open, kind, categories]);
+    setKind(transaction.kind);
+    setCategoryId(transaction.category_id);
+    setDisplayAmount((transaction.amount_cents / 100).toFixed(2).replace(/\.?0+$/, '') || '0');
+    setNote(transaction.note || '');
+    setDate(transaction.transaction_date);
+    setSaving(false);
+  }, [transaction]);
 
   function handleKey(val: string) {
     if (val === 'backspace') {
@@ -47,7 +50,6 @@ export function AddTransactionSheet({ open, onClose, categories }: AddTransactio
       setDisplayAmount((prev) => prev + '00');
       return;
     }
-    // Digits
     if (displayAmount === '0' && val !== '.') {
       setDisplayAmount(val);
       return;
@@ -67,9 +69,20 @@ export function AddTransactionSheet({ open, onClose, categories }: AddTransactio
     formData.append('amount_cents', String(cents));
     formData.append('kind', kind);
     formData.append('note', note);
+    formData.append('transaction_date', date);
 
     try {
-      await createTransaction(formData);
+      await updateTransaction(transaction.id, formData);
+      onClose();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleDelete() {
+    setSaving(true);
+    try {
+      await deleteTransaction(transaction.id);
       onClose();
     } finally {
       setSaving(false);
@@ -82,21 +95,17 @@ export function AddTransactionSheet({ open, onClose, categories }: AddTransactio
 
   return (
     <>
-      {/* Overlay */}
       <div className="fixed inset-0 z-50 bg-black/50" onClick={onClose} />
 
-      {/* Sheet */}
       <div className="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-gray-800 rounded-t-2xl max-h-[90vh] overflow-y-auto">
-        {/* Handle */}
         <div className="flex justify-center pt-3 pb-1">
           <div className="w-10 h-1 bg-gray-300 dark:bg-gray-600 rounded-full" />
         </div>
 
         <div className="px-5 pb-6 space-y-4">
-          {/* Header */}
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-              Adauga tranzactie
+              Editează tranzacție
             </h3>
             <button onClick={onClose} className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
               <X className="w-5 h-5 text-gray-400" />
@@ -113,7 +122,7 @@ export function AddTransactionSheet({ open, onClose, categories }: AddTransactio
                   : 'text-gray-500 dark:text-gray-400'
               }`}
             >
-              Cheltuiala
+              Cheltuială
             </button>
             <button
               onClick={() => setKind('income')}
@@ -180,27 +189,47 @@ export function AddTransactionSheet({ open, onClose, categories }: AddTransactio
             ))}
           </div>
 
+          {/* Date */}
+          <div>
+            <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Dată</label>
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none"
+            />
+          </div>
+
           {/* Note */}
           <input
             type="text"
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            placeholder="Nota (optional)"
+            placeholder="Notă (opțional)"
             className="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none"
           />
 
-          {/* Save */}
-          <button
-            onClick={handleSave}
-            disabled={saving || amountCents === 0 || !categoryId}
-            className={`w-full py-3 rounded-xl text-white font-semibold transition disabled:opacity-40 ${
-              kind === 'expense'
-                ? 'bg-red-500 hover:bg-red-600'
-                : 'bg-green-500 hover:bg-green-600'
-            }`}
-          >
-            {saving ? 'Se salveaza...' : 'Salveaza'}
-          </button>
+          {/* Buttons */}
+          <div className="flex gap-2">
+            <button
+              onClick={handleDelete}
+              disabled={saving}
+              className="px-4 py-3 rounded-xl bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 font-medium text-sm hover:bg-red-100 dark:hover:bg-red-900/50 transition disabled:opacity-40"
+            >
+              Șterge
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={saving || amountCents === 0 || !categoryId}
+              className={`flex-1 py-3 rounded-xl text-white font-semibold transition disabled:opacity-40 ${
+                kind === 'expense'
+                  ? 'bg-red-500 hover:bg-red-600'
+                  : 'bg-green-500 hover:bg-green-600'
+              }`}
+            >
+              {saving ? 'Se salvează...' : 'Salvează'}
+            </button>
+          </div>
         </div>
       </div>
     </>

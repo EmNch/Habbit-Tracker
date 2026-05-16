@@ -44,7 +44,7 @@ export async function savePushSubscription(subscription: {
         endpoint: subscription.endpoint,
         p256dh: subscription.keys.p256dh,
         auth_key: subscription.keys.auth,
-        user_agent: typeof navigator !== 'undefined' ? navigator.userAgent : null,
+        user_agent: null,
       },
       { onConflict: 'user_id,endpoint' },
     );

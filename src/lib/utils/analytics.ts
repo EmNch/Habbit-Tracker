@@ -47,7 +47,7 @@ export function computeNumberMetrics(
   const daysWithEntry = values.length;
   const average = daysWithEntry > 0 ? total / daysWithEntry : 0;
 
-  let max = 0;
+  let max = -Infinity;
   let maxDate: string | null = null;
   for (const v of values) {
     if (v.value > max) {
@@ -71,7 +71,7 @@ export function computeNumberMetrics(
     trend = 100; // went from 0 to something
   }
 
-  return { total: Math.round(total * 100) / 100, average: Math.round(average * 10) / 10, daysWithEntry, max, maxDate, trend, prevTotal: Math.round(prevTotal * 100) / 100 };
+  return { total: Math.round(total * 100) / 100, average: Math.round(average * 10) / 10, daysWithEntry, max: max === -Infinity ? 0 : max, maxDate, trend, prevTotal: Math.round(prevTotal * 100) / 100 };
 }
 
 export function computeRatingMetrics(

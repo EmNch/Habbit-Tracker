@@ -200,11 +200,65 @@ export interface CategoryBudget {
   status: 'safe' | 'normal' | 'warning' | 'danger';
 }
 
+export interface MonthlyBudgetOverview {
+  total_planned_cents: number;
+  total_spent_cents: number;
+  total_income_cents: number;
+  remaining_cents: number;
+  daily_budget_cents: number;
+  spending_percent: number;
+  days_in_month: number;
+  days_elapsed: number;
+  days_remaining: number;
+}
+
+export interface BudgetInsight {
+  category_id: string;
+  category_name: string;
+  category_icon: string;
+  projected_overspend_cents: number;
+  days_until_limit: number | null;
+  severity: 'ok' | 'caution' | 'warning' | 'critical';
+}
+
+export interface MonthlyTrend {
+  month: string;
+  income_cents: number;
+  expense_cents: number;
+  balance_cents: number;
+}
+
+export interface DailySpending {
+  date: string;
+  day: number;
+  amount_cents: number;
+}
+
+export interface RecurringTemplate {
+  id: string;
+  user_id: string;
+  category_id: string;
+  amount_cents: number;
+  kind: BudgetCategoryKind;
+  note: string;
+  frequency: 'monthly';
+  day_of_month: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface RecurringTemplateWithCategory extends RecurringTemplate {
+  category: BudgetCategory;
+}
+
 export interface BudgetSummary {
   total_income_cents: number;
   total_expense_cents: number;
   balance_cents: number;
   categories: CategoryBudget[];
+  overview: MonthlyBudgetOverview;
+  insights: BudgetInsight[];
 }
 
 export interface PushSubscriptionData {

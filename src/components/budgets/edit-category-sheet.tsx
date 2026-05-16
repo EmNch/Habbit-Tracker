@@ -2,23 +2,25 @@
 
 import { useState } from 'react';
 import { X } from 'lucide-react';
-import { createCategory } from '@/lib/actions/budgets';
-import type { BudgetCategoryKind } from '@/lib/types';
+import { updateCategory, deleteCategory } from '@/lib/actions/budgets';
+import type { BudgetCategory } from '@/lib/types';
 
 const ICONS = ['🍕', '🚗', '🏠', '🎬', '👕', '💊', '📚', '✈️', '💻', '🎮', '🏋️', '💇', '🎁', '📱', '💰', '💼', '📈', '🎵', '🐕', '🛒'];
 const COLORS = ['#ef4444', '#f97316', '#f59e0b', '#84cc16', '#10b981', '#06b6d4', '#3b82f6', '#6366f1', '#8b5cf6', '#ec4899'];
 
-interface AddCategorySheetProps {
+interface EditCategorySheetProps {
   open: boolean;
   onClose: () => void;
+  category: BudgetCategory;
 }
 
-export function AddCategorySheet({ open, onClose }: AddCategorySheetProps) {
-  const [name, setName] = useState('');
-  const [icon, setIcon] = useState('📦');
-  const [color, setColor] = useState('#6366f1');
-  const [kind, setKind] = useState<BudgetCategoryKind>('expense');
-  const [limitDisplay, setLimitDisplay] = useState('');
+export function EditCategorySheet({ open, onClose, category }: EditCategorySheetProps) {
+  const [name, setName] = useState(category.name);
+  const [icon, setIcon] = useState(category.icon);
+  const [color, setColor] = useState(category.color);
+  const [limitDisplay, setLimitDisplay] = useState(
+    category.monthly_limit_cents ? (category.monthly_limit_cents / 100).toString() : '',
+  );
   const [saving, setSaving] = useState(false);
 
   async function handleSave() {
@@ -29,18 +31,25 @@ export function AddCategorySheet({ open, onClose }: AddCategorySheetProps) {
     formData.append('name', name.trim());
     formData.append('icon', icon);
     formData.append('color', color);
-    formData.append('kind', kind);
-    if (limitDisplay && kind === 'expense') {
+    if (limitDisplay && category.kind === 'expense') {
       formData.append('monthly_limit_cents', limitDisplay);
     }
 
     try {
-      const result = await createCategory(formData);
+      const result = await updateCategory(category.id, formData);
       if (result.error) return setSaving(false);
-      setName('');
-      setLimitDisplay('');
       onClose();
     } catch {
+      setSaving(false);
+    }
+  }
+
+  async function handleDelete() {
+    setSaving(true);
+    try {
+      await deleteCategory(category.id);
+      onClose();
+    } finally {
       setSaving(false);
     }
   }
@@ -59,35 +68,20 @@ export function AddCategorySheet({ open, onClose }: AddCategorySheetProps) {
         <div className="px-5 pb-6 space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-              Categorie noua
+              Editează categorie
             </h3>
             <button onClick={onClose} className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
               <X className="w-5 h-5 text-gray-400" />
             </button>
           </div>
 
-          {/* Kind toggle */}
-          <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
-            <button
-              onClick={() => setKind('expense')}
-              className={`flex-1 py-2 text-sm font-medium rounded-md transition ${
-                kind === 'expense'
-                  ? 'bg-red-500 text-white'
-                  : 'text-gray-500 dark:text-gray-400'
-              }`}
-            >
-              Cheltuiala
-            </button>
-            <button
-              onClick={() => setKind('income')}
-              className={`flex-1 py-2 text-sm font-medium rounded-md transition ${
-                kind === 'income'
-                  ? 'bg-green-500 text-white'
-                  : 'text-gray-500 dark:text-gray-400'
-              }`}
-            >
-              Venit
-            </button>
+          {/* Kind display */}
+          <div className={`px-3 py-2 rounded-lg text-sm font-medium text-center ${
+            category.kind === 'expense'
+              ? 'bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400'
+              : 'bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400'
+          }`}>
+            {category.kind === 'expense' ? 'Cheltuială' : 'Venit'}
           </div>
 
           {/* Name */}
@@ -139,10 +133,10 @@ export function AddCategorySheet({ open, onClose }: AddCategorySheetProps) {
           </div>
 
           {/* Monthly limit (expenses only) */}
-          {kind === 'expense' && (
+          {category.kind === 'expense' && (
             <div>
               <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
-                Limita lunara (RON, optional)
+                Limită lunară (RON, opțional)
               </label>
               <input
                 type="number"
@@ -156,14 +150,23 @@ export function AddCategorySheet({ open, onClose }: AddCategorySheetProps) {
             </div>
           )}
 
-          {/* Save */}
-          <button
-            onClick={handleSave}
-            disabled={saving || !name.trim()}
-            className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold transition disabled:opacity-40"
-          >
-            {saving ? 'Se salveaza...' : 'Salveaza categoria'}
-          </button>
+          {/* Buttons */}
+          <div className="flex gap-2">
+            <button
+              onClick={handleDelete}
+              disabled={saving}
+              className="px-4 py-3 rounded-xl bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 font-medium text-sm hover:bg-red-100 dark:hover:bg-red-900/50 transition disabled:opacity-40"
+            >
+              Șterge
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={saving || !name.trim()}
+              className="flex-1 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold transition disabled:opacity-40"
+            >
+              {saving ? 'Se salvează...' : 'Salvează'}
+            </button>
+          </div>
         </div>
       </div>
     </>

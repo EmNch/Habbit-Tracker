@@ -1,34 +1,25 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { X, ChevronDown } from 'lucide-react';
-import { createTransaction } from '@/lib/actions/budgets';
+import { useState } from 'react';
+import { X } from 'lucide-react';
+import { createRecurringTemplate } from '@/lib/actions/budgets';
 import type { BudgetCategory, BudgetCategoryKind } from '@/lib/types';
 
-interface AddTransactionSheetProps {
+interface AddRecurringSheetProps {
   open: boolean;
   onClose: () => void;
   categories: BudgetCategory[];
 }
 
-export function AddTransactionSheet({ open, onClose, categories }: AddTransactionSheetProps) {
+export function AddRecurringSheet({ open, onClose, categories }: AddRecurringSheetProps) {
   const [kind, setKind] = useState<BudgetCategoryKind>('expense');
   const [categoryId, setCategoryId] = useState('');
   const [displayAmount, setDisplayAmount] = useState('0');
   const [note, setNote] = useState('');
+  const [dayOfMonth, setDayOfMonth] = useState('1');
   const [saving, setSaving] = useState(false);
 
   const filtered = categories.filter((c) => c.kind === kind);
-
-  useEffect(() => {
-    if (open) {
-      setDisplayAmount('0');
-      setNote('');
-      setSaving(false);
-      const first = categories.find((c) => c.kind === kind);
-      if (first) setCategoryId(first.id);
-    }
-  }, [open, kind, categories]);
 
   function handleKey(val: string) {
     if (val === 'backspace') {
@@ -47,7 +38,6 @@ export function AddTransactionSheet({ open, onClose, categories }: AddTransactio
       setDisplayAmount((prev) => prev + '00');
       return;
     }
-    // Digits
     if (displayAmount === '0' && val !== '.') {
       setDisplayAmount(val);
       return;
@@ -67,9 +57,10 @@ export function AddTransactionSheet({ open, onClose, categories }: AddTransactio
     formData.append('amount_cents', String(cents));
     formData.append('kind', kind);
     formData.append('note', note);
+    formData.append('day_of_month', dayOfMonth);
 
     try {
-      await createTransaction(formData);
+      await createRecurringTemplate(formData);
       onClose();
     } finally {
       setSaving(false);
@@ -82,26 +73,26 @@ export function AddTransactionSheet({ open, onClose, categories }: AddTransactio
 
   return (
     <>
-      {/* Overlay */}
       <div className="fixed inset-0 z-50 bg-black/50" onClick={onClose} />
 
-      {/* Sheet */}
       <div className="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-gray-800 rounded-t-2xl max-h-[90vh] overflow-y-auto">
-        {/* Handle */}
         <div className="flex justify-center pt-3 pb-1">
           <div className="w-10 h-1 bg-gray-300 dark:bg-gray-600 rounded-full" />
         </div>
 
         <div className="px-5 pb-6 space-y-4">
-          {/* Header */}
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-              Adauga tranzactie
+              Tranzacție recurentă
             </h3>
             <button onClick={onClose} className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
               <X className="w-5 h-5 text-gray-400" />
             </button>
           </div>
+
+          <p className="text-xs text-gray-400">
+            Va fi adăugată automat în fiecare lună, în ziua selectată
+          </p>
 
           {/* Kind toggle */}
           <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
@@ -113,7 +104,7 @@ export function AddTransactionSheet({ open, onClose, categories }: AddTransactio
                   : 'text-gray-500 dark:text-gray-400'
               }`}
             >
-              Cheltuiala
+              Cheltuială
             </button>
             <button
               onClick={() => setKind('income')}
@@ -127,7 +118,7 @@ export function AddTransactionSheet({ open, onClose, categories }: AddTransactio
             </button>
           </div>
 
-          {/* Category selector */}
+          {/* Category */}
           <div>
             <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
               Categorie
@@ -152,14 +143,14 @@ export function AddTransactionSheet({ open, onClose, categories }: AddTransactio
             </div>
           </div>
 
-          {/* Amount display */}
+          {/* Amount */}
           <div className="text-center py-2">
             <p className={`text-4xl font-bold tabular-nums ${
               kind === 'expense' ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'
             }`}>
               {kind === 'expense' ? '-' : '+'}{displayAmount}
             </p>
-            <p className="text-xs text-gray-400 mt-1">RON</p>
+            <p className="text-xs text-gray-400 mt-1">RON / lună</p>
           </div>
 
           {/* Keypad */}
@@ -180,12 +171,27 @@ export function AddTransactionSheet({ open, onClose, categories }: AddTransactio
             ))}
           </div>
 
+          {/* Day of month */}
+          <div>
+            <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
+              Ziua din lună (1-28)
+            </label>
+            <input
+              type="number"
+              value={dayOfMonth}
+              onChange={(e) => setDayOfMonth(e.target.value)}
+              min="1"
+              max="28"
+              className="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none"
+            />
+          </div>
+
           {/* Note */}
           <input
             type="text"
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            placeholder="Nota (optional)"
+            placeholder="Notă (opțional, ex: Chiria lunii)"
             className="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none"
           />
 
@@ -193,13 +199,9 @@ export function AddTransactionSheet({ open, onClose, categories }: AddTransactio
           <button
             onClick={handleSave}
             disabled={saving || amountCents === 0 || !categoryId}
-            className={`w-full py-3 rounded-xl text-white font-semibold transition disabled:opacity-40 ${
-              kind === 'expense'
-                ? 'bg-red-500 hover:bg-red-600'
-                : 'bg-green-500 hover:bg-green-600'
-            }`}
+            className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold transition disabled:opacity-40"
           >
-            {saving ? 'Se salveaza...' : 'Salveaza'}
+            {saving ? 'Se salvează...' : 'Creează recurentă'}
           </button>
         </div>
       </div>

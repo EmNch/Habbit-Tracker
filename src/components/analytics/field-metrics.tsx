@@ -13,7 +13,7 @@ interface FieldMetricsProps {
 export function FieldMetrics({ field, entries, daysInRange }: FieldMetricsProps) {
   const type = field.field_type;
 
-  if (type === 'number' || type === 'slider') {
+  if (type === 'number' || type === 'slider' || type === 'time_duration') {
     return <NumberFieldMetrics entries={entries} fieldKey={field.field_key} daysInRange={daysInRange} unit={field.field_label.toLowerCase()} />;
   }
   if (type === 'rating') {

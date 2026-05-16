@@ -17,10 +17,16 @@ export function useAutoSave(
   const fieldsRef = useRef(fieldDefinitions);
   fieldsRef.current = fieldDefinitions;
 
+  // Store habitId and date in refs so scheduled saves use the current values
+  const habitIdRef = useRef(habitId);
+  habitIdRef.current = habitId;
+  const dateRef = useRef(date);
+  dateRef.current = date;
+
   const save = useCallback(
     async (values: EntryValues) => {
       setStatus('saving');
-      const result = await saveHabitEntry(habitId, date, values, fieldsRef.current);
+      const result = await saveHabitEntry(habitIdRef.current, dateRef.current, values, fieldsRef.current);
       if (result.success) {
         setStatus('saved');
         lastSavedJson.current = JSON.stringify(values);
@@ -28,7 +34,7 @@ export function useAutoSave(
         setStatus('error');
       }
     },
-    [habitId, date],
+    [],
   );
 
   const scheduleSave = useCallback(

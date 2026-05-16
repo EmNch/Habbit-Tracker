@@ -1,11 +1,12 @@
 'use client';
 
 import { formatCents } from '@/lib/utils/format';
-import type { CategoryBudget } from '@/lib/types';
+import type { BudgetCategory, CategoryBudget } from '@/lib/types';
 
 interface CategoryProgressProps {
   budgets: CategoryBudget[];
   onAddCategory: () => void;
+  onEditCategory: (category: BudgetCategory) => void;
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -15,7 +16,7 @@ const STATUS_COLORS: Record<string, string> = {
   danger: '#ef4444',
 };
 
-export function CategoryProgress({ budgets, onAddCategory }: CategoryProgressProps) {
+export function CategoryProgress({ budgets, onAddCategory, onEditCategory }: CategoryProgressProps) {
   const expenses = budgets.filter((b) => b.category.kind === 'expense');
   const incomes = budgets.filter((b) => b.category.kind === 'income');
 
@@ -34,7 +35,7 @@ export function CategoryProgress({ budgets, onAddCategory }: CategoryProgressPro
       </div>
 
       {expenses.map((budget) => (
-        <CategoryBar key={budget.category.id} budget={budget} />
+        <CategoryBar key={budget.category.id} budget={budget} onEdit={() => onEditCategory(budget.category)} />
       ))}
 
       {incomes.length > 0 && (
@@ -43,7 +44,7 @@ export function CategoryProgress({ budgets, onAddCategory }: CategoryProgressPro
             <p className="text-xs text-gray-400 mb-2">Venituri</p>
           </div>
           {incomes.map((budget) => (
-            <IncomeRow key={budget.category.id} budget={budget} />
+            <IncomeRow key={budget.category.id} budget={budget} onEdit={() => onEditCategory(budget.category)} />
           ))}
         </>
       )}
@@ -51,7 +52,7 @@ export function CategoryProgress({ budgets, onAddCategory }: CategoryProgressPro
   );
 }
 
-function CategoryBar({ budget }: { budget: CategoryBudget }) {
+function CategoryBar({ budget, onEdit }: { budget: CategoryBudget; onEdit: () => void }) {
   const { category, spent_cents, limit_cents, percent, status } = budget;
   const barColor = STATUS_COLORS[status];
   const isOver = limit_cents !== null && spent_cents > limit_cents;
@@ -59,7 +60,10 @@ function CategoryBar({ budget }: { budget: CategoryBudget }) {
   const overflow = displayPercent > 100;
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-3">
+    <div
+      onClick={onEdit}
+      className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-3 cursor-pointer hover:border-gray-300 dark:hover:border-gray-600 transition"
+    >
       <div className="flex items-center justify-between mb-1.5">
         <div className="flex items-center gap-2">
           <span className="text-base">{category.icon}</span>
@@ -103,7 +107,7 @@ function CategoryBar({ budget }: { budget: CategoryBudget }) {
           status === 'danger' ? 'text-red-500' :
           status === 'warning' ? 'text-amber-500' : 'text-gray-400'
         }`}>
-          {status === 'danger' ? 'Depasit!' : status === 'warning' ? 'Atentie' : ''}
+          {status === 'danger' ? 'Depășit!' : status === 'warning' ? 'Atenție' : ''}
         </span>
         <span className="text-xs text-gray-400 tabular-nums">{percent}%</span>
       </div>
@@ -111,11 +115,14 @@ function CategoryBar({ budget }: { budget: CategoryBudget }) {
   );
 }
 
-function IncomeRow({ budget }: { budget: CategoryBudget }) {
+function IncomeRow({ budget, onEdit }: { budget: CategoryBudget; onEdit: () => void }) {
   const { category, spent_cents } = budget;
 
   return (
-    <div className="flex items-center justify-between px-3 py-2">
+    <div
+      onClick={onEdit}
+      className="flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-lg transition"
+    >
       <div className="flex items-center gap-2">
         <span className="text-base">{category.icon}</span>
         <span className="text-sm text-gray-700 dark:text-gray-300">{category.name}</span>
