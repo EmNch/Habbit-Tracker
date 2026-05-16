@@ -55,12 +55,14 @@ const CHARTABLE_TYPES = new Set<FieldType>(['number', 'slider', 'rating', 'boole
 
 function LineChartComponent({ field, entries }: FieldChartProps) {
   const rawData = entries
-    .filter((e) => e.values[field.field_key] != null)
-    .map((e) => ({
-      date: e.entry_date,
-      label: e.entry_date.slice(5),
-      value: Number(e.values[field.field_key]),
-    }))
+    .map((e) => {
+      const v = e.values[field.field_key];
+      return {
+        date: e.entry_date,
+        label: e.entry_date.slice(5),
+        value: v != null && v !== '' ? Number(v) : 0,
+      };
+    })
     .sort((a, b) => a.date.localeCompare(b.date));
 
   if (rawData.length === 0) {
@@ -154,7 +156,7 @@ function PieChartComponent({ field, entries }: FieldChartProps) {
   entries.forEach((e) => {
     const val = e.values[field.field_key];
     if (val === true) trueCount++;
-    else if (val === false) falseCount++;
+    else falseCount++; // explicit false or missing (padded as false)
   });
 
   if (trueCount === 0 && falseCount === 0) {

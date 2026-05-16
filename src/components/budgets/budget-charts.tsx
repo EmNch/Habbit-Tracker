@@ -1,10 +1,12 @@
 'use client';
 
-import { ExpensePieChart } from './expense-pie-chart';
-import { IncomeExpenseChart } from './income-expense-chart';
-import { DailySpendingChart } from './daily-spending-chart';
-import { CumulativeChart } from './cumulative-chart';
+import dynamic from 'next/dynamic';
 import type { CategoryBudget, MonthlyTrend, DailySpending } from '@/lib/types';
+
+const ExpensePieChart = dynamic(() => import('./expense-pie-chart').then((m) => ({ default: m.ExpensePieChart })), { ssr: false });
+const IncomeExpenseChart = dynamic(() => import('./income-expense-chart').then((m) => ({ default: m.IncomeExpenseChart })), { ssr: false });
+const DailySpendingChart = dynamic(() => import('./daily-spending-chart').then((m) => ({ default: m.DailySpendingChart })), { ssr: false });
+const CumulativeChart = dynamic(() => import('./cumulative-chart').then((m) => ({ default: m.CumulativeChart })), { ssr: false });
 
 interface BudgetChartsProps {
   budgets: CategoryBudget[];

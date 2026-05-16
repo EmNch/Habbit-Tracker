@@ -1,4 +1,3 @@
-import { getHabits } from '@/lib/actions/habits';
 import { getDashboardSummary, getHabitsWithStats } from '@/lib/actions/analytics';
 import { getTargets } from '@/lib/actions/targets';
 import { DashboardClient } from '@/components/dashboard/dashboard-client';
@@ -6,9 +5,13 @@ import Link from 'next/link';
 import { Plus } from 'lucide-react';
 
 export default async function DashboardPage() {
-  const habits = await getHabits();
+  const [summary, habitsWithStats, targets] = await Promise.all([
+    getDashboardSummary(),
+    getHabitsWithStats(),
+    getTargets(),
+  ]);
 
-  if (habits.length === 0) {
+  if (habitsWithStats.length === 0) {
     return (
       <div>
         <div className="flex items-center justify-between mb-6">
@@ -32,12 +35,6 @@ export default async function DashboardPage() {
       </div>
     );
   }
-
-  const [summary, habitsWithStats, targets] = await Promise.all([
-    getDashboardSummary(),
-    getHabitsWithStats(),
-    getTargets(),
-  ]);
 
   return (
     <div>

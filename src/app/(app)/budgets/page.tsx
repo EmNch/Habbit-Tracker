@@ -9,9 +9,6 @@ export default async function BudgetsPage({
   const { month } = await searchParams;
   const yearMonth = month || undefined;
 
-  // Process any pending recurring transactions first
-  await processRecurringTransactions(yearMonth);
-
   const [summary, categories, transactions, trends, dailySpending, totalBalance, recurringTemplates] = await Promise.all([
     getBudgetSummary(yearMonth),
     getCategories(),
@@ -20,6 +17,7 @@ export default async function BudgetsPage({
     getDailySpending(yearMonth),
     getTotalBalance(),
     getRecurringTemplates(),
+    processRecurringTransactions(yearMonth),
   ]);
 
   return (

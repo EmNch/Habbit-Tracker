@@ -5,8 +5,7 @@ import Link from 'next/link';
 import { Plus } from 'lucide-react';
 
 export default async function HabitsPage() {
-  const habits = await getHabits();
-  const archived = await getArchivedHabits();
+  const [habits, archived] = await Promise.all([getHabits(), getArchivedHabits()]);
 
   return (
     <div>

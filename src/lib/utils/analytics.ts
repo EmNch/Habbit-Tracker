@@ -38,14 +38,14 @@ export function computeNumberMetrics(
   const values: { date: string; value: number }[] = [];
   for (const e of entries) {
     const v = e.values[fieldKey];
-    if (v != null && v !== '') {
-      values.push({ date: e.entry_date, value: Number(v) });
-    }
+    // Treat missing/empty as 0 (padded entries already have 0)
+    const num = v != null && v !== '' ? Number(v) : 0;
+    values.push({ date: e.entry_date, value: num });
   }
 
   const total = values.reduce((s, v) => s + v.value, 0);
-  const daysWithEntry = values.length;
-  const average = daysWithEntry > 0 ? total / daysWithEntry : 0;
+  const daysWithEntry = values.filter((v) => v.value !== 0).length;
+  const average = daysInRange > 0 ? total / daysInRange : 0;
 
   let max = -Infinity;
   let maxDate: string | null = null;
@@ -56,8 +56,7 @@ export function computeNumberMetrics(
     }
   }
 
-  // Trend: compare current period total to previous equal-length period
-  // Entries are sorted by date desc (from getEntries), so first N are current period
+  // Trend: compare current half to previous half
   const midpoint = Math.floor(values.length / 2);
   const currentPeriod = values.slice(0, midpoint);
   const prevPeriod = values.slice(midpoint);
@@ -68,7 +67,7 @@ export function computeNumberMetrics(
   if (prevTotal > 0) {
     trend = Math.round(((currentTotal - prevTotal) / prevTotal) * 100);
   } else if (currentTotal > 0) {
-    trend = 100; // went from 0 to something
+    trend = 100;
   }
 
   return { total: Math.round(total * 100) / 100, average: Math.round(average * 10) / 10, daysWithEntry, max: max === -Infinity ? 0 : max, maxDate, trend, prevTotal: Math.round(prevTotal * 100) / 100 };
@@ -105,9 +104,8 @@ export function computeBooleanMetrics(
   let trueCount = 0;
   let falseCount = 0;
 
-  // Entries sorted by date desc — reverse for streak calculation
+  // Entries sorted by date asc (padded with false for missing days)
   const boolEntries = entries
-    .filter((e) => e.values[fieldKey] != null)
     .map((e) => ({ date: e.entry_date, value: e.values[fieldKey] === true }))
     .sort((a, b) => a.date.localeCompare(b.date));
 
