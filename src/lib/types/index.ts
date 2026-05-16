@@ -156,6 +156,40 @@ export interface Target {
 }
 
 // ============================================
+// Personalities Types
+// ============================================
+
+export type PersonalityCategory = 'business' | 'arta' | 'stiinta' | 'sport' | 'tehnologie' | 'muzica' | 'film' | 'literatura' | 'filozofie' | 'general';
+
+export const PERSONALITY_CATEGORIES: { value: PersonalityCategory; label: string }[] = [
+  { value: 'general', label: 'General' },
+  { value: 'business', label: 'Business' },
+  { value: 'arta', label: 'Artă' },
+  { value: 'stiinta', label: 'Știință' },
+  { value: 'sport', label: 'Sport' },
+  { value: 'tehnologie', label: 'Tehnologie' },
+  { value: 'muzica', label: 'Muzică' },
+  { value: 'film', label: 'Film' },
+  { value: 'literatura', label: 'Literatură' },
+  { value: 'filozofie', label: 'Filozofie' },
+];
+
+export const PERSONALITY_ICONS = ['👤', '💼', '🎨', '🔬', '⚽', '💻', '🎵', '🎬', '📖', '🧠', '⭐', '🌟', '🔥', '💡', '🏆', '🚀'];
+
+export interface Personality {
+  id: string;
+  user_id: string;
+  name: string;
+  notes: string;
+  category: PersonalityCategory;
+  link: string;
+  icon: string;
+  color: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// ============================================
 // Budget Types
 // ============================================
 

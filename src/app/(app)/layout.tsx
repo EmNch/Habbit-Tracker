@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   ListTodo,
   Target,
+  Users,
   Wallet,
   Settings,
   LogOut,
@@ -22,6 +23,7 @@ const NAV_ITEMS = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/habits', label: 'Obiceiuri', icon: ListTodo },
   { href: '/targets', label: 'Targete', icon: Target },
+  { href: '/personalities', label: 'Personalități', icon: Users },
   { href: '/budgets', label: 'Bugete', icon: Wallet },
   { href: '/settings', label: 'Setări', icon: Settings },
 ];
