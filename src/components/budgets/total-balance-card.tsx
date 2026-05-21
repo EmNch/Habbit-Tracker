@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import { Landmark, TrendingUp, TrendingDown } from 'lucide-react';
 import { formatCents } from '@/lib/utils/format';
 
@@ -9,7 +10,7 @@ interface TotalBalanceCardProps {
   balance: number;
 }
 
-export function TotalBalanceCard({ income, expense, balance }: TotalBalanceCardProps) {
+export const TotalBalanceCard = React.memo(function TotalBalanceCard({ income, expense, balance }: TotalBalanceCardProps) {
   const isNegative = balance < 0;
 
   return (
@@ -49,4 +50,4 @@ export function TotalBalanceCard({ income, expense, balance }: TotalBalanceCardP
       </div>
     </div>
   );
-}
+});

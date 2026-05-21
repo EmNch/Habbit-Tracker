@@ -185,7 +185,29 @@ export interface Personality {
   link: string;
   icon: string;
   color: string;
+  image_url: string | null;
   created_at: string;
+  updated_at: string;
+}
+
+export interface PersonalityArticle {
+  id: string;
+  user_id: string;
+  personality_id: string;
+  title: string;
+  content: string;
+  category: PersonalityCategory;
+  source_link: string;
+  tags: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CategorySummary {
+  id: string;
+  user_id: string;
+  category: PersonalityCategory;
+  content: string;
   updated_at: string;
 }
 

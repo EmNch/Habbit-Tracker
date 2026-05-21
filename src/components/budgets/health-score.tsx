@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import { Heart } from 'lucide-react';
 import type { BudgetSummary } from '@/lib/types';
 
@@ -7,7 +8,7 @@ interface HealthScoreCardProps {
   summary: BudgetSummary;
 }
 
-export function HealthScoreCard({ summary }: HealthScoreCardProps) {
+export const HealthScoreCard = React.memo(function HealthScoreCard({ summary }: HealthScoreCardProps) {
   const { overview, insights, total_income_cents, total_expense_cents } = summary;
 
   let score = 100;
@@ -99,4 +100,4 @@ export function HealthScoreCard({ summary }: HealthScoreCardProps) {
       </div>
     </div>
   );
-}
+});

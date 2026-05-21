@@ -33,6 +33,15 @@ export async function getPersonality(id: string): Promise<Personality | null> {
   return (data as Personality) ?? null;
 }
 
+async function uploadImage(supabase: Awaited<ReturnType<typeof createClient>>, userId: string, file: File): Promise<string | null> {
+  const ext = file.name.split('.').pop() || 'jpg';
+  const path = `${userId}/${Date.now()}.${ext}`;
+  const { error } = await supabase.storage.from('personality-images').upload(path, file, { upsert: true });
+  if (error) return null;
+  const { data } = supabase.storage.from('personality-images').getPublicUrl(path);
+  return data.publicUrl;
+}
+
 export async function createPersonality(formData: FormData) {
   const supabase = await createClient();
   const { data: user } = await supabase.auth.getUser();
@@ -44,8 +53,17 @@ export async function createPersonality(formData: FormData) {
   const link = (formData.get('link') as string) || '';
   const icon = (formData.get('icon') as string) || '👤';
   const color = (formData.get('color') as string) || '#6366f1';
+  const imageUrl = (formData.get('image_url') as string) || '';
 
   if (!name?.trim()) return { error: 'Numele este obligatoriu' };
+
+  let finalImageUrl: string | null = imageUrl || null;
+
+  const file = formData.get('image_file') as File | null;
+  if (file && file.size > 0) {
+    const uploaded = await uploadImage(supabase, user.user.id, file);
+    if (uploaded) finalImageUrl = uploaded;
+  }
 
   const { data, error } = await supabase
     .from('personalities')
@@ -57,6 +75,7 @@ export async function createPersonality(formData: FormData) {
       link,
       icon,
       color,
+      image_url: finalImageUrl,
     })
     .select()
     .single();
@@ -78,8 +97,17 @@ export async function updatePersonality(id: string, formData: FormData) {
   const link = (formData.get('link') as string) || '';
   const icon = (formData.get('icon') as string) || '👤';
   const color = (formData.get('color') as string) || '#6366f1';
+  const imageUrl = (formData.get('image_url') as string) || '';
 
   if (!name?.trim()) return { error: 'Numele este obligatoriu' };
+
+  let finalImageUrl: string | null = imageUrl || null;
+
+  const file = formData.get('image_file') as File | null;
+  if (file && file.size > 0) {
+    const uploaded = await uploadImage(supabase, user.user.id, file);
+    if (uploaded) finalImageUrl = uploaded;
+  }
 
   const { error } = await supabase
     .from('personalities')
@@ -90,6 +118,7 @@ export async function updatePersonality(id: string, formData: FormData) {
       link,
       icon,
       color,
+      image_url: finalImageUrl,
     })
     .eq('id', id)
     .eq('user_id', user.user.id);
@@ -97,6 +126,7 @@ export async function updatePersonality(id: string, formData: FormData) {
   if (error) return { error: error.message };
 
   revalidatePath('/personalities');
+  revalidatePath(`/personalities/${id}`);
   return { success: true };
 }
 
@@ -104,6 +134,23 @@ export async function deletePersonality(id: string) {
   const supabase = await createClient();
   const { data: user } = await supabase.auth.getUser();
   if (!user.user) return { error: 'Neautentificat' };
+
+  const { data: personality } = await supabase
+    .from('personalities')
+    .select('image_url')
+    .eq('id', id)
+    .eq('user_id', user.user.id)
+    .single();
+
+  if (personality?.image_url) {
+    try {
+      const url = new URL(personality.image_url);
+      const pathParts = url.pathname.split('/personality-images/')[1];
+      if (pathParts) {
+        await supabase.storage.from('personality-images').remove([`${user.user.id}/${pathParts.split('/').pop()}`]);
+      }
+    } catch {}
+  }
 
   const { error } = await supabase
     .from('personalities')

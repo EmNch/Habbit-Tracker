@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import { PiggyBank } from 'lucide-react';
 
 interface SavingsRateCardProps {
@@ -7,7 +8,7 @@ interface SavingsRateCardProps {
   expenseCents: number;
 }
 
-export function SavingsRateCard({ incomeCents, expenseCents }: SavingsRateCardProps) {
+export const SavingsRateCard = React.memo(function SavingsRateCard({ incomeCents, expenseCents }: SavingsRateCardProps) {
   const saved = incomeCents - expenseCents;
   const rate = incomeCents > 0 ? Math.round((saved / incomeCents) * 100) : 0;
   const clampedRate = Math.max(-100, Math.min(100, rate));
@@ -52,4 +53,4 @@ export function SavingsRateCard({ incomeCents, expenseCents }: SavingsRateCardPr
       </p>
     </div>
   );
-}
+});

@@ -11,7 +11,7 @@ export async function getHabits(): Promise<Habit[]> {
 
   const { data } = await supabase
     .from('habits')
-    .select('*')
+    .select('id, user_id, name, description, cover_image_url, color, icon, is_active, reminder_enabled, reminder_time, reminder_timezone, stats_cache, created_at, updated_at')
     .eq('user_id', user.user.id)
     .eq('is_active', true)
     .order('created_at', { ascending: false });
@@ -24,7 +24,7 @@ export async function getHabitWithFields(habitId: string): Promise<HabitWithFiel
 
   const { data: habit } = await supabase
     .from('habits')
-    .select('*')
+    .select('id, user_id, name, description, cover_image_url, color, icon, is_active, reminder_enabled, reminder_time, reminder_timezone, stats_cache, created_at, updated_at')
     .eq('id', habitId)
     .single();
 
@@ -32,7 +32,7 @@ export async function getHabitWithFields(habitId: string): Promise<HabitWithFiel
 
   const { data: fields } = await supabase
     .from('habit_field_definitions')
-    .select('*')
+    .select('id, habit_id, field_key, field_label, field_type, is_required, field_options, sort_order, is_deleted, deleted_at, created_at, updated_at')
     .eq('habit_id', habitId)
     .eq('is_deleted', false)
     .order('sort_order', { ascending: true });
@@ -129,7 +129,7 @@ export async function getArchivedHabits(): Promise<Habit[]> {
 
   const { data } = await supabase
     .from('habits')
-    .select('*')
+    .select('id, user_id, name, description, cover_image_url, color, icon, is_active, reminder_enabled, reminder_time, reminder_timezone, stats_cache, created_at, updated_at')
     .eq('user_id', user.user.id)
     .eq('is_active', false)
     .order('updated_at', { ascending: false });

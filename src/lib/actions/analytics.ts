@@ -1,6 +1,6 @@
 'use server';
 
-import { createClient } from '@/lib/supabase/server';
+import { createClient, getCachedUser } from '@/lib/supabase/server';
 import type {
   HabitWithStats,
   DashboardSummary,
@@ -34,58 +34,52 @@ function entryHasContent(values: unknown): boolean {
 
 type DbRow = Record<string, unknown>;
 
-interface ColumnCheck {
-  hasStatsCache: boolean;
-  hasIsCompleted: boolean;
-}
-
-let columnCheckResult: ColumnCheck | null = null;
-
-async function checkColumns(supabase: Awaited<ReturnType<typeof createClient>>): Promise<ColumnCheck> {
-  if (columnCheckResult) return columnCheckResult;
-
-  const { error: habitErr } = await supabase.from('habits').select('stats_cache').limit(1);
-  const { error: entryErr } = await supabase.from('habit_entries').select('is_completed').limit(1);
-
-  columnCheckResult = { hasStatsCache: !habitErr, hasIsCompleted: !entryErr };
-  return columnCheckResult;
-}
-
 export async function getDashboardSummary(): Promise<DashboardSummary> {
-  const supabase = await createClient();
-  const { data: user } = await supabase.auth.getUser();
-  if (!user.user) {
+  const user = await getCachedUser();
+  if (!user) {
     return { totalHabits: 0, completedToday: 0, currentGlobalStreak: 0, bestHabitStreak: 0, completionRateToday: 0, heatmapData: [] };
   }
 
-  const userId = user.user.id;
+  const userId = user.id;
+  const supabase = await createClient();
   const today = getLocalToday();
-  const cols = await checkColumns(supabase);
 
-  // Fetch all active habits
-  const { data: habits } = await supabase
-    .from('habits')
-    .select('*')
-    .eq('user_id', userId)
-    .eq('is_active', true);
+  // Heatmap date range (independent of other queries)
+  const oneYearAgo = new Date();
+  oneYearAgo.setDate(oneYearAgo.getDate() - 364);
+  const startDate = oneYearAgo.toLocaleDateString('sv-SE');
+
+  // Fetch habits, today's entries, and heatmap in parallel
+  const [
+    { data: habits },
+    { data: todayEntries },
+    heatmapResult,
+  ] = await Promise.all([
+    supabase
+      .from('habits')
+      .select('id, stats_cache')
+      .eq('user_id', userId)
+      .eq('is_active', true),
+    supabase
+      .from('habit_entries')
+      .select('habit_id, is_completed, values')
+      .eq('user_id', userId)
+      .eq('entry_date', today),
+    supabase
+      .from('habit_entries')
+      .select('entry_date')
+      .eq('user_id', userId)
+      .gte('entry_date', startDate)
+      .eq('is_completed', true),
+  ]);
 
   const activeHabits = (habits as DbRow[]) ?? [];
   const totalHabits = activeHabits.length;
 
-  // Count today's entries with content
-  const { data: todayEntries } = await supabase
-    .from('habit_entries')
-    .select('*')
-    .eq('user_id', userId)
-    .eq('entry_date', today);
-
   const todayRows = (todayEntries as DbRow[]) ?? [];
   const completedToday = new Set(
     todayRows
-      .filter((e) => {
-        if (cols.hasIsCompleted && e.is_completed) return true;
-        return entryHasContent(e.values);
-      })
+      .filter((e) => e.is_completed || entryHasContent(e.values))
       .map((e) => e.habit_id as string),
   ).size;
 
@@ -94,18 +88,16 @@ export async function getDashboardSummary(): Promise<DashboardSummary> {
   let bestHabitStreak = 0;
   let currentGlobalStreak = 0;
 
-  if (cols.hasStatsCache) {
-    for (const habit of activeHabits) {
-      const stats = parseStatsCache(habit.stats_cache);
-      if (stats) {
-        if (stats.current_streak > 0 && stats.current_streak < 1000) {
-          if (currentGlobalStreak === 0 || stats.current_streak < currentGlobalStreak) {
-            currentGlobalStreak = stats.current_streak;
-          }
+  for (const habit of activeHabits) {
+    const stats = parseStatsCache(habit.stats_cache);
+    if (stats) {
+      if (stats.current_streak > 0 && stats.current_streak < 1000) {
+        if (currentGlobalStreak === 0 || stats.current_streak < currentGlobalStreak) {
+          currentGlobalStreak = stats.current_streak;
         }
-        if (stats.longest_streak > bestHabitStreak) {
-          bestHabitStreak = stats.longest_streak;
-        }
+      }
+      if (stats.longest_streak > bestHabitStreak) {
+        bestHabitStreak = stats.longest_streak;
       }
     }
   }
@@ -114,23 +106,8 @@ export async function getDashboardSummary(): Promise<DashboardSummary> {
     currentGlobalStreak = 0;
   }
 
-  // Heatmap
-  const oneYearAgo = new Date();
-  oneYearAgo.setDate(oneYearAgo.getDate() - 364);
-  const startDate = oneYearAgo.toLocaleDateString('sv-SE');
-
-  let heatmapQuery = supabase
-    .from('habit_entries')
-    .select('entry_date')
-    .eq('user_id', userId)
-    .gte('entry_date', startDate);
-
-  if (cols.hasIsCompleted) {
-    heatmapQuery = heatmapQuery.eq('is_completed', true);
-  }
-
-  const { data: heatmapRaw } = await heatmapQuery;
-  const heatRows = (heatmapRaw as DbRow[]) ?? [];
+  // Heatmap processing (data already fetched in parallel above)
+  const heatRows = (heatmapResult.data as DbRow[]) ?? [];
 
   const dayCounts: Record<string, number> = {};
   for (const row of heatRows) {
@@ -155,33 +132,36 @@ export async function getDashboardSummary(): Promise<DashboardSummary> {
 
 export async function getHabitsWithStats(): Promise<HabitWithStats[]> {
   const supabase = await createClient();
-  const { data: user } = await supabase.auth.getUser();
-  if (!user.user) return [];
+  const user = await getCachedUser();
+  if (!user) return [];
 
-  const userId = user.user.id;
+  const userId = user.id;
   const today = getLocalToday();
-  const cols = await checkColumns(supabase);
 
-  const { data: habits, error } = await supabase
-    .from('habits')
-    .select('*')
-    .eq('user_id', userId)
-    .eq('is_active', true)
-    .order('created_at', { ascending: false });
+  const [
+    { data: habits, error },
+    { data: todayEntries },
+  ] = await Promise.all([
+    supabase
+      .from('habits')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('is_active', true)
+      .order('created_at', { ascending: false }),
+    supabase
+      .from('habit_entries')
+      .select('habit_id, is_completed, values')
+      .eq('user_id', userId)
+      .eq('entry_date', today),
+  ]);
 
   if (error || !habits) return [];
-
-  const { data: todayEntries } = await supabase
-    .from('habit_entries')
-    .select('*')
-    .eq('user_id', userId)
-    .eq('entry_date', today);
 
   const todayRows = (todayEntries as DbRow[]) ?? [];
   const todayMap = new Map<string, { exists: boolean; completed: boolean }>();
   for (const entry of todayRows) {
     const habitId = entry.habit_id as string;
-    const completed = Boolean((cols.hasIsCompleted && entry.is_completed) || entryHasContent(entry.values));
+    const completed = Boolean(entry.is_completed || entryHasContent(entry.values));
     todayMap.set(habitId, { exists: true, completed });
   }
 
@@ -197,7 +177,7 @@ export async function getHabitsWithStats(): Promise<HabitWithStats[]> {
     reminder_enabled: (h.reminder_enabled as boolean) ?? false,
     reminder_time: (h.reminder_time as string) ?? null,
     reminder_timezone: (h.reminder_timezone as string) ?? 'Europe/Bucharest',
-    stats_cache: cols.hasStatsCache ? parseStatsCache(h.stats_cache) : null,
+    stats_cache: parseStatsCache(h.stats_cache),
     created_at: h.created_at as string,
     updated_at: h.updated_at as string,
     todayCompleted: todayMap.get(h.id as string)?.completed ?? false,

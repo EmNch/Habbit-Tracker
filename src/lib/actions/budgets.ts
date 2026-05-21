@@ -120,7 +120,7 @@ export async function getCategories(): Promise<BudgetCategory[]> {
 
   const { data } = await supabase
     .from('budget_categories')
-    .select('*')
+    .select('id, user_id, name, icon, color, kind, monthly_limit_cents, is_active, sort_order')
     .eq('user_id', user.user.id)
     .eq('is_active', true)
     .order('sort_order', { ascending: true });
@@ -295,7 +295,7 @@ export async function getRecentTransactions(yearMonth?: string, limit = 50): Pro
 
   let query = supabase
     .from('transactions')
-    .select('*, category:budget_categories(*)')
+    .select('id, category_id, amount_cents, kind, note, transaction_date, category:budget_categories(id, name, icon, color, kind)')
     .eq('user_id', user.user.id);
 
   if (yearMonth) {
@@ -344,7 +344,7 @@ export async function getBudgetSummary(yearMonth?: string): Promise<BudgetSummar
   const [catsResult, transResult] = await Promise.all([
     supabase
       .from('budget_categories')
-      .select('*')
+      .select('id, user_id, name, icon, color, kind, monthly_limit_cents, is_active, sort_order')
       .eq('user_id', user.user.id)
       .eq('is_active', true)
       .order('sort_order', { ascending: true }),
@@ -476,19 +476,16 @@ export async function getTotalBalance(): Promise<{ income: number; expense: numb
   const { data: user } = await supabase.auth.getUser();
   if (!user.user) return { income: 0, expense: 0, balance: 0 };
 
-  const { data } = await supabase
-    .from('transactions')
-    .select('amount_cents, kind')
-    .eq('user_id', user.user.id);
+  const { data } = await supabase.rpc('get_total_balance', { p_user_id: user.user.id });
 
-  let income = 0;
-  let expense = 0;
-  for (const t of (data ?? [])) {
-    if (t.kind === 'income') income += t.amount_cents as number;
-    else expense += t.amount_cents as number;
-  }
+  if (!data || data.length === 0) return { income: 0, expense: 0, balance: 0 };
 
-  return { income, expense, balance: income - expense };
+  const row = data[0];
+  return {
+    income: row.income ?? 0,
+    expense: row.expense ?? 0,
+    balance: row.balance ?? 0,
+  };
 }
 
 // ── Recurring Templates ──
@@ -500,7 +497,7 @@ export async function getRecurringTemplates(): Promise<RecurringTemplateWithCate
 
   const { data } = await supabase
     .from('recurring_templates')
-    .select('*, category:budget_categories(*)')
+    .select('id, category_id, amount_cents, kind, note, day_of_month, is_active, category:budget_categories(id, name, icon, color, kind)')
     .eq('user_id', user.user.id)
     .eq('is_active', true)
     .order('day_of_month', { ascending: true });
@@ -594,33 +591,45 @@ export async function processRecurringTransactions(yearMonth?: string): Promise<
     if (match) processedIds.add(match[1]);
   }
 
-  let created = 0;
+  const rowsToInsert: Array<{
+    user_id: string;
+    category_id: string;
+    amount_cents: number;
+    kind: string;
+    note: string;
+    transaction_date: string;
+    is_recurring: boolean;
+  }> = [];
+
   const dayOfMonth = Math.min(new Date(year, month + 1, 0).getDate(), 28);
   const txDate = new Date(year, month, dayOfMonth).toLocaleDateString('sv-SE');
 
   for (const tmpl of templates) {
     if (processedIds.has(tmpl.id)) continue;
 
-    // Only generate if the target day has passed or is today (for current month)
     if (year === new Date().getFullYear() && month === new Date().getMonth()) {
       if (new Date().getDate() < tmpl.day_of_month) continue;
     }
 
     const note = tmpl.note ? `${tmpl.note} [rec:${tmpl.id}]` : `[rec:${tmpl.id}]`;
 
+    rowsToInsert.push({
+      user_id: user.user.id,
+      category_id: tmpl.category_id,
+      amount_cents: tmpl.amount_cents,
+      kind: tmpl.kind,
+      note,
+      transaction_date: txDate,
+      is_recurring: true,
+    });
+  }
+
+  let created = 0;
+  if (rowsToInsert.length > 0) {
     const { error } = await supabase
       .from('transactions')
-      .insert({
-        user_id: user.user.id,
-        category_id: tmpl.category_id,
-        amount_cents: tmpl.amount_cents,
-        kind: tmpl.kind,
-        note,
-        transaction_date: txDate,
-        is_recurring: true,
-      });
-
-    if (!error) created++;
+      .insert(rowsToInsert);
+    if (!error) created = rowsToInsert.length;
   }
 
   if (created > 0) revalidatePath('/budgets');

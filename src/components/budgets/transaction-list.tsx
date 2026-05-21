@@ -12,9 +12,10 @@ interface TransactionListProps {
   transactions: TransactionWithCategory[];
   categories: BudgetCategory[];
   onEdit: (transaction: TransactionWithCategory) => void;
+  onDeleted?: () => void;
 }
 
-export function TransactionList({ transactions, categories, onEdit }: TransactionListProps) {
+export function TransactionList({ transactions, categories, onEdit, onDeleted }: TransactionListProps) {
   const [search, setSearch] = useState('');
   const [filterCat, setFilterCat] = useState<string>('all');
   const [showFilters, setShowFilters] = useState(false);
@@ -42,6 +43,16 @@ export function TransactionList({ transactions, categories, onEdit }: Transactio
 
   const hasActiveFilter = search.trim() !== '' || filterCat !== 'all';
 
+  const grouped = useMemo(() => {
+    const map = new Map<string, TransactionWithCategory[]>();
+    for (const t of filtered) {
+      const key = t.transaction_date;
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(t);
+    }
+    return map;
+  }, [filtered]);
+
   function clearFilters() {
     setSearch('');
     setFilterCat('all');
@@ -53,13 +64,6 @@ export function TransactionList({ transactions, categories, onEdit }: Transactio
         <p className="text-sm text-gray-400">Nicio tranzacție înregistrată</p>
       </div>
     );
-  }
-
-  const grouped = new Map<string, TransactionWithCategory[]>();
-  for (const t of filtered) {
-    const key = t.transaction_date;
-    if (!grouped.has(key)) grouped.set(key, []);
-    grouped.get(key)!.push(t);
   }
 
   return (
@@ -160,7 +164,7 @@ export function TransactionList({ transactions, categories, onEdit }: Transactio
             </p>
             <div className="space-y-1">
               {items.map((t) => (
-                <TransactionRow key={t.id} transaction={t} onEdit={onEdit} />
+                <TransactionRow key={t.id} transaction={t} onEdit={onEdit} onDeleted={onDeleted} />
               ))}
             </div>
           </div>
@@ -173,16 +177,18 @@ export function TransactionList({ transactions, categories, onEdit }: Transactio
 function TransactionRow({
   transaction: t,
   onEdit,
+  onDeleted,
 }: {
   transaction: TransactionWithCategory;
   onEdit: (t: TransactionWithCategory) => void;
+  onDeleted?: () => void;
 }) {
   const isExpense = t.kind === 'expense';
 
   async function handleDelete(e: React.MouseEvent) {
     e.stopPropagation();
     await deleteTransaction(t.id);
-    window.location.reload();
+    onDeleted?.();
   }
 
   return (

@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import { Trophy, Zap, Hash, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { formatCents } from '@/lib/utils/format';
 import type { TransactionWithCategory } from '@/lib/types';
@@ -9,7 +10,7 @@ interface QuickStatsProps {
   daysElapsed: number;
 }
 
-export function QuickStats({ transactions, daysElapsed }: QuickStatsProps) {
+export const QuickStats = React.memo(function QuickStats({ transactions, daysElapsed }: QuickStatsProps) {
   const expenses = transactions.filter((t) => t.kind === 'expense');
 
   if (expenses.length === 0) {
@@ -94,4 +95,4 @@ export function QuickStats({ transactions, daysElapsed }: QuickStatsProps) {
       </div>
     </div>
   );
-}
+});

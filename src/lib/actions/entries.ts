@@ -12,7 +12,7 @@ export async function getEntry(
   const supabase = await createClient();
   const { data } = await supabase
     .from('habit_entries')
-    .select('*')
+    .select('id, habit_id, user_id, entry_date, values, is_completed, created_at, updated_at')
     .eq('habit_id', habitId)
     .eq('entry_date', date)
     .single();
@@ -28,7 +28,7 @@ export async function getEntries(
   const supabase = await createClient();
   const { data } = await supabase
     .from('habit_entries')
-    .select('*')
+    .select('id, habit_id, user_id, entry_date, values, is_completed, created_at, updated_at')
     .eq('habit_id', habitId)
     .gte('entry_date', startDate)
     .lte('entry_date', endDate)

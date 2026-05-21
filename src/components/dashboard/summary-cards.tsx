@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import { CheckCircle2, Flame, Trophy, Target } from 'lucide-react';
 import type { DashboardSummary } from '@/lib/types';
 
@@ -7,7 +8,7 @@ interface SummaryCardsProps {
   summary: DashboardSummary;
 }
 
-export function SummaryCards({ summary }: SummaryCardsProps) {
+export const SummaryCards = React.memo(function SummaryCards({ summary }: SummaryCardsProps) {
   const cards = [
     {
       label: 'Completare azi',
@@ -83,4 +84,4 @@ export function SummaryCards({ summary }: SummaryCardsProps) {
       ))}
     </div>
   );
-}
+});

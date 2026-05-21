@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -41,6 +41,7 @@ export function HabitDetailClient({ habit, initialEntry, initialHistory }: Habit
   const [showCalendar, setShowCalendar] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
+  const isInitialMount = useRef(true);
 
   const fieldDefs = habit.field_definitions;
   const { status, scheduleSave, immediateSave, initializeSaved } = useAutoSave(
@@ -74,12 +75,12 @@ export function HabitDetailClient({ habit, initialEntry, initialHistory }: Habit
   }, [habitId]);
 
   useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
     loadEntry();
   }, [selectedDate, loadEntry]);
-
-  useEffect(() => {
-    loadHistory();
-  }, [loadHistory]);
 
   function handleChange(key: string, value: string | number | boolean | null) {
     const newValues = { ...values, [key]: value };

@@ -1,4 +1,4 @@
-import { getBudgetSummary, getCategories, getRecentTransactions, getMonthlyTrends, getDailySpending, getTotalBalance, getRecurringTemplates, processRecurringTransactions } from '@/lib/actions/budgets';
+import { getBudgetSummary, getRecentTransactions, getMonthlyTrends, getDailySpending, getTotalBalance, getRecurringTemplates, processRecurringTransactions } from '@/lib/actions/budgets';
 import { BudgetsClient } from '@/components/budgets/budgets-client';
 
 export default async function BudgetsPage({
@@ -9,16 +9,20 @@ export default async function BudgetsPage({
   const { month } = await searchParams;
   const yearMonth = month || undefined;
 
-  const [summary, categories, transactions, trends, dailySpending, totalBalance, recurringTemplates] = await Promise.all([
+  const [summary, transactions, trends, dailySpending, totalBalance, recurringTemplates] = await Promise.all([
     getBudgetSummary(yearMonth),
-    getCategories(),
     getRecentTransactions(yearMonth),
     getMonthlyTrends(),
     getDailySpending(yearMonth),
     getTotalBalance(),
     getRecurringTemplates(),
-    processRecurringTransactions(yearMonth),
   ]);
+
+  // Extract categories from summary (avoids redundant getCategories() query)
+  const categories = summary.categories.map((cb) => cb.category);
+
+  // Process recurring transactions off the critical render path
+  processRecurringTransactions(yearMonth).catch(() => {});
 
   return (
     <BudgetsClient

@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Search, Trash2, ExternalLink, Users } from 'lucide-react';
 import { deletePersonality } from '@/lib/actions/personalities';
 import { PERSONALITY_CATEGORIES, type Personality, type PersonalityCategory } from '@/lib/types';
@@ -16,15 +17,23 @@ export function PersonalitiesClient({ initialPersonalities }: { initialPersonali
     setPersonalities((p) => p.filter((x) => x.id !== id));
   }
 
-  const filtered = personalities.filter((p) => {
+  const filtered = useMemo(() => personalities.filter((p) => {
     const matchesSearch = search === '' ||
       p.name.toLowerCase().includes(search.toLowerCase()) ||
       p.notes.toLowerCase().includes(search.toLowerCase());
     const matchesCategory = activeCategory === 'all' || p.category === activeCategory;
     return matchesSearch && matchesCategory;
-  });
+  }), [personalities, search, activeCategory]);
 
-  const usedCategories = [...new Set(personalities.map((p) => p.category))];
+  const usedCategories = useMemo(() => [...new Set(personalities.map((p) => p.category))], [personalities]);
+
+  const categoryCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const p of personalities) {
+      counts.set(p.category, (counts.get(p.category) || 0) + 1);
+    }
+    return counts;
+  }, [personalities]);
 
   return (
     <>
@@ -65,7 +74,7 @@ export function PersonalitiesClient({ initialPersonalities }: { initialPersonali
                     : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
                 }`}
               >
-                {cat.label} ({personalities.filter((p) => p.category === cat.value).length})
+                {cat.label} ({categoryCounts.get(cat.value) || 0})
               </button>
             ))}
         </div>
@@ -96,19 +105,27 @@ export function PersonalitiesClient({ initialPersonalities }: { initialPersonali
             className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 transition hover:border-gray-300 dark:hover:border-gray-600"
           >
             <div className="flex items-start justify-between gap-3">
-              <div className="flex items-start gap-3 flex-1 min-w-0">
-                <span
-                  className="text-2xl flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center"
-                  style={{ backgroundColor: p.color + '20' }}
-                >
-                  {p.icon}
-                </span>
+              <Link href={`/personalities/${p.id}`} className="flex items-start gap-3 flex-1 min-w-0">
+                {p.image_url ? (
+                  <Image
+                    src={p.image_url}
+                    alt={p.name}
+                    width={40}
+                    height={40}
+                    className="w-10 h-10 rounded-lg object-cover flex-shrink-0"
+                  />
+                ) : (
+                  <span
+                    className="text-2xl flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center"
+                    style={{ backgroundColor: p.color + '20' }}
+                  >
+                    {p.icon}
+                  </span>
+                )}
                 <div className="flex-1 min-w-0">
-                  <Link href={`/personalities/${p.id}/edit`} className="block">
-                    <h3 className="font-semibold text-gray-900 dark:text-white text-sm">
-                      {p.name}
-                    </h3>
-                  </Link>
+                  <h3 className="font-semibold text-gray-900 dark:text-white text-sm">
+                    {p.name}
+                  </h3>
                   {p.notes && (
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">
                       {p.notes}
@@ -119,19 +136,14 @@ export function PersonalitiesClient({ initialPersonalities }: { initialPersonali
                       {PERSONALITY_CATEGORIES.find((c) => c.value === p.category)?.label}
                     </span>
                     {p.link && (
-                      <a
-                        href={p.link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-1 text-xs text-indigo-600 dark:text-indigo-400 hover:underline"
-                      >
+                      <span className="flex items-center gap-1 text-xs text-indigo-600 dark:text-indigo-400">
                         <ExternalLink className="w-3 h-3" />
                         Link
-                      </a>
+                      </span>
                     )}
                   </div>
                 </div>
-              </div>
+              </Link>
               <button
                 onClick={() => handleDelete(p.id)}
                 className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-400 hover:text-red-500 transition flex-shrink-0"

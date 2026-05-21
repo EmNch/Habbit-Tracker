@@ -182,6 +182,7 @@ export function BudgetsClient({
           transactions={transactions}
           categories={categories}
           onEdit={(tx) => setEditTx(tx)}
+          onDeleted={refresh}
         />
       </div>
 

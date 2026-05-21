@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import { Wallet, TrendingDown, PiggyBank, CalendarDays } from 'lucide-react';
 import { formatCents } from '@/lib/utils/format';
 import type { BudgetSummary } from '@/lib/types';
@@ -8,7 +9,7 @@ interface BudgetSummaryCardProps {
   summary: BudgetSummary;
 }
 
-export function BudgetSummaryCard({ summary }: BudgetSummaryCardProps) {
+export const BudgetSummaryCard = React.memo(function BudgetSummaryCard({ summary }: BudgetSummaryCardProps) {
   const { overview } = summary;
   const pct = overview.spending_percent;
 
@@ -100,7 +101,7 @@ export function BudgetSummaryCard({ summary }: BudgetSummaryCardProps) {
       )}
     </div>
   );
-}
+});
 
 function MetricCard({
   icon,

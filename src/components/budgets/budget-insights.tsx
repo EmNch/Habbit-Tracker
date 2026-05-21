@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import { AlertTriangle, CheckCircle2, Info } from 'lucide-react';
 import { formatCents } from '@/lib/utils/format';
 import type { BudgetInsight } from '@/lib/types';
@@ -15,7 +16,7 @@ const SEVERITY_STYLES: Record<BudgetInsight['severity'], { bg: string; text: str
   critical: { bg: 'bg-red-50 dark:bg-red-900/20', text: 'text-red-700 dark:text-red-400', icon: '✗' },
 };
 
-export function BudgetInsights({ insights }: BudgetInsightsProps) {
+export const BudgetInsights = React.memo(function BudgetInsights({ insights }: BudgetInsightsProps) {
   const alerts = insights.filter((i) => i.severity !== 'ok');
 
   return (
@@ -74,4 +75,4 @@ export function BudgetInsights({ insights }: BudgetInsightsProps) {
       )}
     </div>
   );
-}
+});
