@@ -35,7 +35,7 @@ export function ArchivedHabits({ habits }: ArchivedHabitsProps) {
     <div className="mt-8">
       <button
         onClick={() => setExpanded(!expanded)}
-        className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition"
+        className="flex items-center gap-2 text-sm font-medium text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition"
       >
         <Archive className="w-4 h-4" />
         {expanded ? 'Ascunde' : 'Obiceiuri dezactivate'} ({list.length})
@@ -46,20 +46,20 @@ export function ArchivedHabits({ habits }: ArchivedHabitsProps) {
           {list.map((habit) => (
             <div
               key={habit.id}
-              className="flex items-center justify-between bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700 px-4 py-3"
+              className="flex items-center justify-between bg-[var(--surface)] border border-[var(--border-color)] rounded-2xl px-4 py-3 opacity-60"
             >
-              <div className="flex items-center gap-2.5 opacity-60">
+              <div className="flex items-center gap-3">
                 <span className="text-lg">{habit.icon}</span>
-                <span className="text-sm text-gray-700 dark:text-gray-300">
+                <span className="text-sm font-medium text-gray-500 dark:text-gray-400 line-through">
                   {habit.name}
                 </span>
               </div>
               <button
                 onClick={() => handleReactivate(habit.id)}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-xl transition"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
-                Reactiveaza
+                Reactivează
               </button>
             </div>
           ))}

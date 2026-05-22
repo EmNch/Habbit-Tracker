@@ -114,7 +114,21 @@ export interface DashboardSummary {
   bestHabitStreak: number;
   completionRateToday: number;
   heatmapData: HeatmapDay[];
+  discipline: DisciplineLevel;
 }
+
+export interface DisciplinePeriod {
+  label: string;
+  percent: number;
+  completedEntries: number;
+  expectedEntries: number;
+  days: number;
+}
+
+export type DisciplineLevel = {
+  periods: DisciplinePeriod[];
+  firstEntryDate: string | null;
+};
 
 export interface HeatmapDay {
   date: string;
@@ -149,6 +163,7 @@ export interface Target {
   deadline: string | null;
   is_completed: boolean;
   completed_at: string | null;
+  is_archived: boolean;
   color: string;
   icon: string;
   created_at: string;
@@ -212,109 +227,73 @@ export interface CategorySummary {
 }
 
 // ============================================
-// Budget Types
+// Financial Types
 // ============================================
 
-export type BudgetCategoryKind = 'expense' | 'income';
+export type FinancialEntryKind = 'income' | 'expense' | 'saving';
 
-export interface BudgetCategory {
+export interface FinancialEntry {
+  id: string;
+  user_id: string;
+  kind: FinancialEntryKind;
+  amount_cents: number;
+  category: string;
+  description: string;
+  saving_goal_id: string | null;
+  entry_date: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SavingGoal {
   id: string;
   user_id: string;
   name: string;
-  icon: string;
+  target_amount_cents: number;
   color: string;
-  kind: BudgetCategoryKind;
-  monthly_limit_cents: number | null;
-  sort_order: number;
-  is_active: boolean;
+  icon: string;
+  deadline: string | null;
+  is_completed: boolean;
+  saved_cents: number;
   created_at: string;
   updated_at: string;
 }
 
-export interface Transaction {
+export interface Debt {
   id: string;
   user_id: string;
-  category_id: string;
-  amount_cents: number;
-  kind: BudgetCategoryKind;
-  note: string;
-  transaction_date: string;
-  is_recurring: boolean;
+  name: string;
+  creditor: string;
+  total_amount_cents: number;
+  paid_amount_cents: number;
+  due_date: string | null;
+  notes: string;
+  is_paid: boolean;
   created_at: string;
   updated_at: string;
 }
 
-export interface TransactionWithCategory extends Transaction {
-  category: BudgetCategory;
+export interface DebtSummary {
+  debts: Debt[];
+  totalDebtCents: number;
+  totalPaidCents: number;
+  totalRemainingCents: number;
 }
 
-export interface CategoryBudget {
-  category: BudgetCategory;
-  spent_cents: number;
-  limit_cents: number | null;
-  percent: number;
-  status: 'safe' | 'normal' | 'warning' | 'danger';
+export interface FinancialSummary {
+  totalBalanceCents: number;
+  monthlyIncomeCents: number;
+  monthlyExpenseCents: number;
+  totalSavingsCents: number;
+  debtSummary: DebtSummary;
 }
 
-export interface MonthlyBudgetOverview {
-  total_planned_cents: number;
-  total_spent_cents: number;
-  total_income_cents: number;
-  remaining_cents: number;
-  daily_budget_cents: number;
-  spending_percent: number;
-  days_in_month: number;
-  days_elapsed: number;
-  days_remaining: number;
-}
-
-export interface BudgetInsight {
-  category_id: string;
-  category_name: string;
-  category_icon: string;
-  projected_overspend_cents: number;
-  days_until_limit: number | null;
-  severity: 'ok' | 'caution' | 'warning' | 'critical';
-}
-
-export interface MonthlyTrend {
-  month: string;
-  income_cents: number;
-  expense_cents: number;
-  balance_cents: number;
-}
-
-export interface DailySpending {
-  date: string;
-  day: number;
-  amount_cents: number;
-}
-
-export interface RecurringTemplate {
-  id: string;
-  user_id: string;
-  category_id: string;
-  amount_cents: number;
-  kind: BudgetCategoryKind;
-  note: string;
-  frequency: 'monthly';
-  day_of_month: number;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface RecurringTemplateWithCategory extends RecurringTemplate {
-  category: BudgetCategory;
-}
-
-export interface BudgetSummary {
-  total_income_cents: number;
-  total_expense_cents: number;
-  balance_cents: number;
-  categories: CategoryBudget[];
-  overview: MonthlyBudgetOverview;
-  insights: BudgetInsight[];
+export interface FinancialOverview {
+  totalBalanceCents: number;
+  monthlyIncomeCents: number;
+  monthlyExpenseCents: number;
+  monthlyProfitCents: number;
+  debtSummary: DebtSummary;
 }
 
 export interface PushSubscriptionData {

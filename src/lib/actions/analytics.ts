@@ -6,10 +6,104 @@ import type {
   DashboardSummary,
   HeatmapDay,
   HabitStatsCache,
+  DisciplineLevel,
 } from '@/lib/types';
 
 function getLocalToday(): string {
   return new Date().toLocaleDateString('sv-SE');
+}
+
+type PeriodDef = { key: string; label: string; days: number | null };
+
+const DISCIPLINE_PERIODS: PeriodDef[] = [
+  { key: '1m', label: '1 lună', days: 30 },
+  { key: '3m', label: '3 luni', days: 90 },
+  { key: '1y', label: '1 an', days: 365 },
+  { key: 'all', label: 'Tot timpul', days: null },
+];
+
+async function computeDiscipline(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  totalActiveHabits: number,
+): Promise<DisciplineLevel> {
+  if (totalActiveHabits === 0) {
+    return { periods: [], firstEntryDate: null };
+  }
+
+  // Find the user's first entry date
+  const { data: firstEntry } = await supabase
+    .from('habit_entries')
+    .select('entry_date')
+    .eq('user_id', userId)
+    .order('entry_date', { ascending: true })
+    .limit(1);
+
+  const firstEntryDate = (firstEntry as DbRow[])?.[0]?.entry_date as string | null;
+  if (!firstEntryDate) {
+    return { periods: [], firstEntryDate: null };
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayStr = today.toLocaleDateString('sv-SE');
+  const firstDate = new Date(firstEntryDate + 'T00:00:00');
+
+  // Fetch all completed entries for the user (from first entry to today)
+  const { data: allCompleted } = await supabase
+    .from('habit_entries')
+    .select('entry_date')
+    .eq('user_id', userId)
+    .gte('entry_date', firstEntryDate)
+    .lte('entry_date', todayStr)
+    .eq('is_completed', true);
+
+  const completedRows = (allCompleted as DbRow[]) ?? [];
+
+  // Count completed entries per day
+  const completedPerDay: Record<string, number> = {};
+  for (const row of completedRows) {
+    const d = row.entry_date as string;
+    completedPerDay[d] = (completedPerDay[d] || 0) + 1;
+  }
+
+  // Total completed entries
+  const totalCompleted = completedRows.length;
+
+  const periods = DISCIPLINE_PERIODS.map((def) => {
+    let startDate: Date;
+    if (def.days === null) {
+      startDate = firstDate;
+    } else {
+      startDate = new Date(today);
+      startDate.setDate(startDate.getDate() - def.days + 1);
+      if (startDate < firstDate) startDate = firstDate;
+    }
+
+    const startStr = startDate.toLocaleDateString('sv-SE');
+    const days = Math.max(1, Math.round((today.getTime() - startDate.getTime()) / 86400000) + 1);
+    const expected = totalActiveHabits * days;
+
+    // Count completed entries within this period
+    let periodCompleted = 0;
+    for (const [date, count] of Object.entries(completedPerDay)) {
+      if (date >= startStr && date <= todayStr) {
+        periodCompleted += count;
+      }
+    }
+
+    const percent = expected > 0 ? Math.min(100, Math.round((periodCompleted / expected) * 1000) / 10) : 0;
+
+    return {
+      label: def.label,
+      percent,
+      completedEntries: periodCompleted,
+      expectedEntries: expected,
+      days,
+    };
+  });
+
+  return { periods, firstEntryDate };
 }
 
 function parseStatsCache(raw: unknown): HabitStatsCache | null {
@@ -37,17 +131,29 @@ type DbRow = Record<string, unknown>;
 export async function getDashboardSummary(): Promise<DashboardSummary> {
   const user = await getCachedUser();
   if (!user) {
-    return { totalHabits: 0, completedToday: 0, currentGlobalStreak: 0, bestHabitStreak: 0, completionRateToday: 0, heatmapData: [] };
+    return { totalHabits: 0, completedToday: 0, currentGlobalStreak: 0, bestHabitStreak: 0, completionRateToday: 0, heatmapData: [], discipline: { periods: [], firstEntryDate: null } };
   }
 
   const userId = user.id;
   const supabase = await createClient();
   const today = getLocalToday();
 
-  // Heatmap date range (independent of other queries)
-  const oneYearAgo = new Date();
-  oneYearAgo.setDate(oneYearAgo.getDate() - 364);
-  const startDate = oneYearAgo.toLocaleDateString('sv-SE');
+  // Find earliest habit creation date for heatmap start
+  const { data: firstHabit } = await supabase
+    .from('habits')
+    .select('created_at')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: true })
+    .limit(1);
+
+  const firstHabitDate = (firstHabit as DbRow[])?.[0]?.created_at as string | undefined;
+  const heatmapStartDate = firstHabitDate
+    ? new Date(firstHabitDate)
+    : new Date(Date.now() - 364 * 86400000);
+  // Start from the Monday of that week
+  const startDow = (heatmapStartDate.getDay() + 6) % 7;
+  heatmapStartDate.setDate(heatmapStartDate.getDate() - startDow);
+  const heatmapStartStr = heatmapStartDate.toLocaleDateString('sv-SE');
 
   // Fetch habits, today's entries, and heatmap in parallel
   const [
@@ -69,7 +175,7 @@ export async function getDashboardSummary(): Promise<DashboardSummary> {
       .from('habit_entries')
       .select('entry_date')
       .eq('user_id', userId)
-      .gte('entry_date', startDate)
+      .gte('entry_date', heatmapStartStr)
       .eq('is_completed', true),
   ]);
 
@@ -106,7 +212,7 @@ export async function getDashboardSummary(): Promise<DashboardSummary> {
     currentGlobalStreak = 0;
   }
 
-  // Heatmap processing (data already fetched in parallel above)
+  // Heatmap processing
   const heatRows = (heatmapResult.data as DbRow[]) ?? [];
 
   const dayCounts: Record<string, number> = {};
@@ -115,10 +221,16 @@ export async function getDashboardSummary(): Promise<DashboardSummary> {
     dayCounts[d] = (dayCounts[d] || 0) + 1;
   }
 
+  const todayDate = new Date();
+  todayDate.setHours(0, 0, 0, 0);
+  const totalDays = Math.max(1, Math.round((todayDate.getTime() - heatmapStartDate.getTime()) / 86400000) + 1);
+  // Round up to full weeks
+  const totalCells = Math.ceil(totalDays / 7) * 7;
+
   const maxCount = Math.max(...Object.values(dayCounts), 1);
   const heatmapData: HeatmapDay[] = [];
-  for (let i = 0; i < 365; i++) {
-    const d = new Date(oneYearAgo);
+  for (let i = 0; i < totalCells; i++) {
+    const d = new Date(heatmapStartDate);
     d.setDate(d.getDate() + i);
     const dateStr = d.toLocaleDateString('sv-SE');
     const count = dayCounts[dateStr] ?? 0;
@@ -127,7 +239,9 @@ export async function getDashboardSummary(): Promise<DashboardSummary> {
     heatmapData.push({ date: dateStr, count, level });
   }
 
-  return { totalHabits, completedToday, currentGlobalStreak, bestHabitStreak, completionRateToday, heatmapData };
+  const discipline = await computeDiscipline(supabase, userId, totalHabits);
+
+  return { totalHabits, completedToday, currentGlobalStreak, bestHabitStreak, completionRateToday, heatmapData, discipline };
 }
 
 export async function getHabitsWithStats(): Promise<HabitWithStats[]> {

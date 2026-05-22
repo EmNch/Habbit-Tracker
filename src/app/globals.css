@@ -3,18 +3,33 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-elevated: var(--surface-elevated);
+  --color-border: var(--border-color);
+  --color-primary: var(--primary);
+  --color-primary-light: var(--primary-light);
   --font-sans: var(--font-inter);
 }
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f8f9fb;
+  --foreground: #0f172a;
+  --surface: #ffffff;
+  --surface-elevated: #ffffff;
+  --border-color: #e2e8f0;
+  --primary: #4338ca;
+  --primary-light: #eef2ff;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #06080f;
+    --foreground: #f1f5f9;
+    --surface: #111827;
+    --surface-elevated: #1e293b;
+    --border-color: #1e293b;
+    --primary: #818cf8;
+    --primary-light: #1e1b4b;
   }
 }
 
@@ -23,13 +38,44 @@ body {
   color: var(--foreground);
 }
 
+/* Premium card base */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  transition: all 0.2s ease;
+}
+
+.dark .card {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.03);
+}
+
+.card-hover:hover {
+  border-color: var(--primary);
+  box-shadow: 0 4px 16px rgba(67, 56, 202, 0.08);
+}
+
+.dark .card-hover:hover {
+  box-shadow: 0 4px 16px rgba(129, 140, 248, 0.08);
+}
+
+/* Accent gradient */
+.gradient-accent {
+  background: linear-gradient(135deg, #4338ca 0%, #6366f1 100%);
+}
+
+.dark .gradient-accent {
+  background: linear-gradient(135deg, #4338ca 0%, #818cf8 100%);
+}
+
+/* Range slider */
 input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: #6366f1;
+  background: #4338ca;
   cursor: pointer;
 }
 
@@ -37,14 +83,27 @@ input[type="range"]::-moz-range-thumb {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: #6366f1;
+  background: #4338ca;
   cursor: pointer;
   border: none;
 }
 
-/* Gamification animations */
+.dark input[type="range"]::-webkit-slider-thumb {
+  background: #818cf8;
+}
+
+.dark input[type="range"]::-moz-range-thumb {
+  background: #818cf8;
+}
+
+/* Animations */
 @keyframes fade-in {
   from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(100%); }
   to { opacity: 1; transform: translateY(0); }
 }
 
@@ -62,6 +121,10 @@ input[type="range"]::-moz-range-thumb {
   animation: fade-in 0.4s ease-out;
 }
 
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out;
+}
+
 .animate-bounce-subtle {
   animation: bounce-subtle 1.5s ease-in-out infinite;
 }
@@ -70,39 +133,25 @@ input[type="range"]::-moz-range-thumb {
   animation: pulse-subtle 2s ease-in-out infinite;
 }
 
-/* Mobile / PWA optimizations */
+/* PWA optimizations */
 @supports (padding: env(safe-area-inset-bottom)) {
-  body {
-    padding-bottom: env(safe-area-inset-bottom);
-  }
+  body { padding-bottom: env(safe-area-inset-bottom); }
 }
 
-/* Prevent iOS bounce scroll */
 html {
   -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
 }
 
-/* Disable tap highlight on mobile */
 * {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Smooth scroll */
-html {
-  scroll-behavior: smooth;
-}
-
-/* Touch-friendly inputs */
 input, select, textarea, button {
-  font-size: 16px; /* Prevents iOS zoom on focus */
+  font-size: 16px;
 }
 
-/* Hide scrollbar on mobile for cleaner look */
 @media (max-width: 768px) {
-  ::-webkit-scrollbar {
-    display: none;
-  }
-  * {
-    scrollbar-width: none;
-  }
+  ::-webkit-scrollbar { display: none; }
+  * { scrollbar-width: none; }
 }

@@ -1,13 +1,15 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import type { HabitWithStats, DashboardSummary, Target } from '@/lib/types';
+import type { HabitWithStats, DashboardSummary, Target, FinancialSummary as FinancialSummaryType } from '@/lib/types';
 import { SummaryCards } from './summary-cards';
 import { MotivationalHeader } from './motivational-header';
 import { ActivityHeatmap } from './activity-heatmap';
 import { HabitStatsGrid } from './habit-stats-grid';
 import { TargetCountdown } from './target-countdown';
 import { EmptyDashboard } from './empty-state';
+import { DisciplineLevel } from './discipline-level';
+import { FinancialOverview } from './financial-overview';
 import { Confetti } from '@/components/gamification/confetti';
 import { ContextualMessage } from '@/components/gamification/contextual-message';
 
@@ -15,9 +17,10 @@ interface DashboardClientProps {
   habits: HabitWithStats[];
   summary: DashboardSummary | null;
   targets: Target[];
+  financialSummary: FinancialSummaryType;
 }
 
-export function DashboardClient({ habits, summary, targets }: DashboardClientProps) {
+export function DashboardClient({ habits, summary, targets, financialSummary }: DashboardClientProps) {
   const [showConfetti, setShowConfetti] = useState(false);
   const [prevCompleted, setPrevCompleted] = useState(0);
 
@@ -40,7 +43,7 @@ export function DashboardClient({ habits, summary, targets }: DashboardClientPro
   const hourOfDay = new Date().getHours();
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5 md:space-y-6">
       <Confetti active={showConfetti} />
 
       <ContextualMessage
@@ -53,12 +56,17 @@ export function DashboardClient({ habits, summary, targets }: DashboardClientPro
       <MotivationalHeader summary={summary} />
       <SummaryCards summary={summary} />
 
-      {/* Targets countdown */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 md:gap-6">
+        {summary.discipline.periods.length > 0 && (
+          <DisciplineLevel discipline={summary.discipline} />
+        )}
+        <FinancialOverview summary={financialSummary} />
+      </div>
+
       {targets.length > 0 && (
         <TargetCountdown targets={targets} />
       )}
 
-      {/* Heatmap */}
       <ActivityHeatmap
         data={summary.heatmapData}
         deadlines={targets
@@ -67,7 +75,7 @@ export function DashboardClient({ habits, summary, targets }: DashboardClientPro
       />
 
       <div>
-        <h2 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
+        <h2 className="text-sm font-bold text-gray-900 dark:text-white mb-4">
           Obiceiurile tale
         </h2>
         <HabitStatsGrid habits={habits} />

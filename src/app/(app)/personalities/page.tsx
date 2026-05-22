@@ -15,14 +15,14 @@ export default async function PersonalitiesPage() {
         <div className="flex items-center gap-2">
           <Link
             href="/personalities/summaries"
-            className="flex items-center gap-1.5 px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 text-sm font-medium rounded-lg transition"
+            className="flex items-center gap-1.5 px-4 py-2.5 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 text-sm font-semibold rounded-xl transition"
           >
             <BookOpen className="w-4 h-4" />
             Rezumate
           </Link>
           <Link
             href="/personalities/new"
-            className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition"
+            className="flex items-center gap-1.5 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl shadow-lg shadow-indigo-600/20 transition"
           >
             <Plus className="w-4 h-4" />
             Adaugă

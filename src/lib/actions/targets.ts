@@ -13,7 +13,23 @@ export async function getTargets(): Promise<Target[]> {
     .from('targets')
     .select('*')
     .eq('user_id', user.user.id)
+    .eq('is_archived', false)
     .order('deadline', { ascending: true, nullsFirst: false });
+
+  return (data as Target[]) ?? [];
+}
+
+export async function getArchivedTargets(): Promise<Target[]> {
+  const supabase = await createClient();
+  const { data: user } = await supabase.auth.getUser();
+  if (!user.user) return [];
+
+  const { data } = await supabase
+    .from('targets')
+    .select('*')
+    .eq('user_id', user.user.id)
+    .eq('is_archived', true)
+    .order('updated_at', { ascending: false });
 
   return (data as Target[]) ?? [];
 }
@@ -113,6 +129,42 @@ export async function deleteTarget(targetId: string) {
   const { error } = await supabase
     .from('targets')
     .delete()
+    .eq('id', targetId)
+    .eq('user_id', user.user.id);
+
+  if (error) return { error: error.message };
+
+  revalidatePath('/dashboard');
+  revalidatePath('/targets');
+  return { success: true };
+}
+
+export async function archiveTarget(targetId: string) {
+  const supabase = await createClient();
+  const { data: user } = await supabase.auth.getUser();
+  if (!user.user) return { error: 'Neautentificat' };
+
+  const { error } = await supabase
+    .from('targets')
+    .update({ is_archived: true })
+    .eq('id', targetId)
+    .eq('user_id', user.user.id);
+
+  if (error) return { error: error.message };
+
+  revalidatePath('/dashboard');
+  revalidatePath('/targets');
+  return { success: true };
+}
+
+export async function reactivateTarget(targetId: string) {
+  const supabase = await createClient();
+  const { data: user } = await supabase.auth.getUser();
+  if (!user.user) return { error: 'Neautentificat' };
+
+  const { error } = await supabase
+    .from('targets')
+    .update({ is_archived: false })
     .eq('id', targetId)
     .eq('user_id', user.user.id);
 

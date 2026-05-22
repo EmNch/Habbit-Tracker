@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { Target as TargetIcon, Clock, Plus } from 'lucide-react';
-import { differenceInDays, format } from 'date-fns';
+import { differenceInDays } from 'date-fns';
 import type { Target } from '@/lib/types';
 
 const FREQUENCY_LABELS: Record<string, string> = {
@@ -26,20 +26,22 @@ export function TargetCountdown({ targets }: TargetCountdownProps) {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-          <TargetIcon className="w-4 h-4 text-indigo-600" />
-          Targete active
-        </h2>
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center">
+            <TargetIcon className="w-4 h-4 text-white" />
+          </div>
+          <h3 className="text-sm font-bold text-gray-900 dark:text-white">Targete active</h3>
+        </div>
         <Link
           href="/targets/new"
-          className="flex items-center gap-1 text-xs text-indigo-600 dark:text-indigo-400 hover:underline"
+          className="flex items-center gap-1.5 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition"
         >
           <Plus className="w-3.5 h-3.5" />
-          Adauga
+          Adaugă
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
         {active.slice(0, 6).map((target) => {
           const daysLeft = differenceInDays(new Date(target.deadline!), new Date());
           const isOverdue = daysLeft < 0;
@@ -49,11 +51,11 @@ export function TargetCountdown({ targets }: TargetCountdownProps) {
             <Link
               key={target.id}
               href={`/targets/${target.id}/edit`}
-              className="block bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 hover:shadow-md transition"
+              className="group block bg-[var(--surface)] border border-[var(--border-color)] rounded-2xl p-4 hover:border-indigo-400 dark:hover:border-indigo-500/50 hover:shadow-lg hover:shadow-indigo-500/5 transition-all duration-300"
             >
-              <div className="flex items-center gap-2 mb-2">
+              <div className="flex items-center gap-2.5 mb-2">
                 <span className="text-lg">{target.icon}</span>
-                <h3 className="font-medium text-sm text-gray-900 dark:text-white truncate">
+                <h3 className="font-bold text-sm text-gray-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition truncate">
                   {target.name}
                 </h3>
               </div>
@@ -63,20 +65,20 @@ export function TargetCountdown({ targets }: TargetCountdownProps) {
               </p>
 
               <div
-                className={`flex items-center gap-1.5 text-xs font-medium px-2 py-1 rounded-full w-fit ${
+                className={`flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-lg w-fit ${
                   isOverdue
-                    ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
+                    ? 'bg-rose-100 dark:bg-rose-900/20 text-rose-700 dark:text-rose-300'
                     : isUrgent
-                      ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300'
-                      : 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300'
+                      ? 'bg-amber-100 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300'
+                      : 'bg-indigo-100 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300'
                 }`}
               >
                 <Clock className="w-3 h-3" />
                 {isOverdue ? (
-                  'Deadline depasit'
+                  'Deadline depășit'
                 ) : (
                   <>
-                    {daysLeft} {daysLeft === 1 ? 'zi' : 'zile'} ramase
+                    {daysLeft} {daysLeft === 1 ? 'zi' : 'zile'} rămase
                   </>
                 )}
               </div>

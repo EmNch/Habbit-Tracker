@@ -15,7 +15,7 @@ export default async function HabitsPage() {
         </h1>
         <Link
           href="/habits/new"
-          className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition"
+          className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl shadow-lg shadow-indigo-600/20 transition"
         >
           <Plus className="w-4 h-4" />
           Obicei nou
@@ -29,7 +29,7 @@ export default async function HabitsPage() {
           </p>
           <Link
             href="/habits/new"
-            className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl shadow-lg shadow-indigo-600/20 transition"
           >
             <Plus className="w-4 h-4" />
             Creeaza obicei
